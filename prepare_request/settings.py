@@ -9,10 +9,10 @@
 #     http://scrapy.readthedocs.org/en/latest/topics/downloader-middleware.html
 #     http://scrapy.readthedocs.org/en/latest/topics/spider-middleware.html
 
-BOT_NAME = 'UserAgent'
+BOT_NAME = 'prepare_request'
 
-SPIDER_MODULES = ['UserAgent.Spiders']
-NEWSPIDER_MODULE = 'UserAgent.Spiders'
+SPIDER_MODULES = ['prepare_request.Spiders']
+NEWSPIDER_MODULE = 'prepare_request.Spiders'
 
 # Retry many times since proxies often fail
 # RETRY_TIMES = 10
@@ -57,12 +57,10 @@ DOWNLOAD_DELAY = 1
 
 # Enable or disable downloader middlewares
 # See http://scrapy.readthedocs.org/en/latest/topics/downloader-middleware.html
-# DOWNLOADER_MIDDLEWARES = {
-#    'lianjia.middlewares.MyCustomDownloaderMiddleware': 543,
-#
-# }
-
-
+DOWNLOADER_MIDDLEWARES = {
+    'prepare_request.middlewares.RandUserAgentMiddleware': 510,
+    'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': None
+}
 
 # Enable or disable extensions
 # See http://scrapy.readthedocs.org/en/latest/topics/extensions.html
@@ -73,7 +71,7 @@ DOWNLOAD_DELAY = 1
 # Configure item pipelines
 # See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    'UserAgent.pipelines.RedisPipeline': 310,
+    'prepare_request.pipelines.RedisPipeline': 310,
     # 'scrapy_redis.pipelines.RedisPipeline': 320
 }
 
@@ -109,7 +107,7 @@ SCHEDULER = "scrapy_redis.scheduler.Scheduler"
 # Ensure all spiders share same duplicates filter through redis.
 DUPEFILTER_CLASS = "scrapy_redis.dupefilter.RFPDupeFilter"
 
-#use set or list
+# use set or list
 REDIS_START_URLS_AS_SET = True
 
 REDIS_HOST = '127.0.0.1'

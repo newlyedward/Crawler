@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-import scrapy
+from scrapy_redis.spiders import RedisSpider
 
 
-class PorxyPoolSpider(scrapy.Spider):
+class PorxyPoolSpider(RedisSpider):
     name = "Porxy_Pool"
     allowed_domains = ["xicidaili.com"]
     start_urls = ['http://xicidaili.com/']

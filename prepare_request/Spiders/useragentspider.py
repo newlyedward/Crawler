@@ -1,7 +1,7 @@
-from scrapy_redis.spiders import RedisSpider
 from scrapy_redis import defaults
+from scrapy_redis.spiders import RedisSpider
+
 from ..items import UserAgentItem
-from UserAgent import settings
 
 
 class UserAgentSpdier(RedisSpider):
