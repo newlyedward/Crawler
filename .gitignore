@@ -1,6 +1,10 @@
 # Created by .ignore support plugin (hsz.mobi)
 .idea/
-DBPipeline/
 prepare_request/Spiders/__pycache__/
 prepare_request/__pycache__/
+
+/tests/test.py
+/tests/.cache/
+/learn/
+*.h5
 

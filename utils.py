@@ -1,5 +1,8 @@
+# -*- coding: utf-8 -*-
 import requests
 from lxml import etree
+
+# ---------------------- crawler utils--------------------------------
 
 DEFAULT_HEADERS = {'Connection': 'keep-alive',
                    'Cache-Control': 'max-age=0',
@@ -11,9 +14,13 @@ DEFAULT_HEADERS = {'Connection': 'keep-alive',
                    }
 
 
-def get_html_text(url, headers=DEFAULT_HEADERS):
+def get_html_text(url, ua=''):
+    headers = DEFAULT_HEADERS
+    if ua:
+        headers['User-Agent'] = ua
+
     try:
-        resp = requests.get(url, headers=headers, timeout=10)
+        resp = requests.get(url, headers, timeout=10)
         resp.raise_for_status()
         resp.encoding = resp.apparent_encoding
         return resp.text
@@ -21,9 +28,13 @@ def get_html_text(url, headers=DEFAULT_HEADERS):
         return resp.status_code
 
 
-def get_post_text(url, data=None, headers=DEFAULT_HEADERS):
+def get_post_text(url, data=None, ua=''):
+    headers = DEFAULT_HEADERS
+    if ua:
+        headers['User-Agent'] = ua
+
     try:
-        resp = requests.post(url, data, headers)
+        resp = requests.post(url=url, data=data, headers=headers)
         resp.raise_for_status()
         resp.encoding = resp.apparent_encoding
         return resp.text
@@ -31,11 +42,16 @@ def get_post_text(url, data=None, headers=DEFAULT_HEADERS):
         return resp.status_code
 
 
-def get_html_tree(url, headers=DEFAULT_HEADERS):
+def get_html_tree(url, ua=''):
+    headers = DEFAULT_HEADERS
+    if ua:
+        headers['User-Agent'] = ua
+
     try:
         resp = requests.get(url=url, headers=headers, timeout=30)
         resp.raise_for_status()
-        return etree.HTML(resp.content)
+        resp.encoding = resp.apparent_encoding
+        return etree.HTML(resp.text)
     except:
         return resp.status_code
 
@@ -45,6 +61,34 @@ def get_ua_list():
     resp = get_html_tree(url)
     ua_list = resp.xpath('//textarea[@class="get-the-list"]/text()')[0].splitlines()
     return ua_list
+
+
+# ---------------------- scientific calculation--------------------------------
+def perf_comp_data(func_list, data_list, rep=3, number=1):
+    """Function to compare the performance of different functions
+
+    :param func_list: list
+        list with function names as string
+    :param data_list: list
+        list with data set names as strings
+    :param rep: int
+        number of repetitions of the whole comparison
+    :param number: int
+        number of executions for every function
+    :return:
+    """
+    from timeit import repeat
+    res_list = {}
+    for name in enumerate(func_list):
+        stmt = name[1] + '(' + data_list[name[0]] + ')'
+        setup = "from __main__ import " + name[1] + ',' + data_list[name[0]]
+        results = repeat(stmt=stmt, setup=setup, repeat=rep, number=number)
+        res_list[name[1]] = sum(results) / rep
+    res_sort = sorted(res_list.items(),
+                      key=lambda x: x[1])
+    for item in res_sort:
+        rel = item[1] / res_sort[0][1]
+        print('function:' + item[0] + ', av. time sec: %9.5f, ' % item[1] + 'relative: %6.1f' % rel)
 
 
 if __name__ == '__main__':
@@ -58,7 +102,7 @@ if __name__ == '__main__':
     # print(get_post_text(url=url, data=post_data))
 
     # test for get_ua_list
-    ua_list = get_ua_list()
+
 
     # from pymongo import MongoClient
     # client = MongoClient('192.168.2.130', 27017)
@@ -69,4 +113,8 @@ if __name__ == '__main__':
     import redis
 
     conn = redis.Redis('192.168.2.88', 6379, decode_responses=True)
-    conn.sadd('user_agent', *ua_list)
+
+    todo = 1
+    if todo:
+        ua_list = get_ua_list()
+        conn.sadd('user_agent', *ua_list)
