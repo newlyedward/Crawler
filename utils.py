@@ -1,6 +1,20 @@
 # -*- coding: utf-8 -*-
+import os
 import requests
 from lxml import etree
+from configparser import ConfigParser
+
+
+def get_congfig_file(file_name='Config.ini'):
+    file_name = os.path.join(os.getcwd(), file_name)
+    fp = open(file_name, 'w')
+    return fp
+
+def get_congfig_handle(file_name='Config.ini'):
+    config = ConfigParser()
+    file_name = os.path.join(os.getcwd(), file_name)
+    config.read(file_name)
+    return config
 
 # ---------------------- crawler utils--------------------------------
 
