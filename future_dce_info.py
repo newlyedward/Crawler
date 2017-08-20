@@ -2,6 +2,7 @@
 import os
 import redis
 import pandas as pd
+import datetime as dt
 from utils import get_html_tree, get_congfig_handle
 
 
@@ -20,8 +21,8 @@ def dlse_contract_info(url, ua):
                      cols[6]: content[6::7],
                      }
     df = pd.DataFrame(contract_info)
-    # df.index = df[cols[1]]
-    # df.pop(cols[1])
+    df.index = df[cols[1]]
+    df.pop(cols[1])
     df[cols[2]] = df[cols[2]].astype('int')
     df[cols[3]] = df[cols[3]].str.strip().astype('float')
     df[cols[4]] = pd.to_datetime(df[cols[4]], errors='coerce')
@@ -45,7 +46,7 @@ if __name__ == '__main__':
     conn = redis.Redis(redis_host, redis_port, decode_responses=True)
     ua = conn.srandmember('user_agent')
 
-    to_do = 0
+    to_do = 1
     if to_do:
         url = 'http://www.dce.com.cn/publicweb/businessguidelines/queryContractInfo.html'
 
@@ -53,4 +54,9 @@ if __name__ == '__main__':
 
         file_name = os.path.join(future_dir, 'dlse_contracts.h5')
         df_future = df[~df['delivery'].isnull()]
+        if os.path.exists(file_name):
+            df = pd.read_hdf(file_name, 'table', columns=['update'])
+            df_future['update'] = df['update']
+        else:
+            df_future.loc[:, 'update'] = dt.datetime(1970, 1, 1)
         df_future.to_hdf(file_name, 'table', format='table', data_columns=True, complevel=5, complib='blosc')

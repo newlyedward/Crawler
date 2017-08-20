@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import datetime as dt
 
-from utils import get_congfig_handle, get_congfig_file
+from utils import get_congfig_handle
 from settings import *
 
 
@@ -20,7 +20,7 @@ def tdx_future_basic(tdx_dir):
     return df
 
 
-def build_tdx_hq_dir(tdx_dir, market='dlce', period='day'):
+def _build_tdx_hq_dir(tdx_dir, market='dlce', period='day'):
     tdx_hq_dir = os.path.join(tdx_dir, 'vipdoc', MARKET_DIR[market], PERIOD_DIR[period])
     assert os.path.exists(tdx_hq_dir)
     return tdx_hq_dir
@@ -30,40 +30,66 @@ def build_tdx_hq_dir(tdx_dir, market='dlce', period='day'):
 #     return dt.datetime(int(x / 10000), int(x % 10000 / 100), x % 100)
 
 
-def int2date(x):
+def _int2date(x):
     year = int(x / 2048) + 2004
     month = int(x % 2048 / 100)
     day = x % 2048 % 100
     return dt.datetime(year, month, day)
 
 
-def tdx_future_day_hq(code, tdx_dir, market='dlce', period='day'):
-    """
-    :param code: IL8 主力合约 IL9 期货指数 I1801
-    :param tdx_dir: 通达信目录
-    :param market: 交易市场
-    :param period: 周期
-    :return: 返回
-    """
-
-    tdx_hq_dir = build_tdx_hq_dir(tdx_dir, market, period)
-    hq_filename = EXCHANGE2TDX_CODE[market] + '#' + code + PERIOD_EXT[period]
-    hq_path = os.path.join(tdx_hq_dir, hq_filename)
-
-    assert os.path.exists(hq_path)
-
+def _tdx_future_day_hq(file_handler):
     names = 'date', 'open', 'high', 'low', 'close', 'openInt', 'volume', 'comment'
     offsets = tuple(range(0, 31, 4))
     formats = 'i4', 'f4', 'f4', 'f4', 'f4', 'i4', 'i4', 'i4'
 
-    dt = np.dtype({'names': names, 'offsets': offsets, 'formats': formats}, align=True)
-    hq_day_df = pd.DataFrame(np.fromfile(hq_path, dt))
+    dt_types = np.dtype({'names': names, 'offsets': offsets, 'formats': formats}, align=True)
+    hq_day_df = pd.DataFrame(np.fromfile(file_handler, dt_types))
     hq_day_df.index = pd.to_datetime(hq_day_df.date.astype('str'), errors='coerce')
     hq_day_df.pop('date')
     return hq_day_df
 
 
-def tdx_future_min_hq(code, tdx_dir, market='dlce', period='5min'):
+def tdx_future_day_hq(code, tdx_dir, market='dlce', period='day', update=dt.datetime(1970, 1, 1)):
+    """
+    :param update: 最后更新日期
+    :param code: IL8 主力合约 IL9 期货指数 I1801
+    :param tdx_dir: 通达信目录
+    :param market: 交易市场
+    :param period: 周期
+    :return: 返回
+    """
+
+    tdx_hq_dir = _build_tdx_hq_dir(tdx_dir, market, period)
+    hq_filename = EXCHANGE2TDX_CODE[market] + '#' + code + PERIOD_EXT[period]
+    hq_path = os.path.join(tdx_hq_dir, hq_filename)
+
+    if not os.path.exists(hq_path):
+        return None
+
+    f = open(hq_path, "rb")
+
+    f.seek(0, 0)
+    begin = np.fromfile(f, dtype=np.int32, count=1)
+    begin = dt.datetime.strptime(begin.astype(str)[0], '%Y%m%d')
+
+    f.seek(-32, 2)
+    end = np.fromfile(f, dtype=np.int32, count=1)
+    end = dt.datetime.strptime(end.astype(str)[0], '%Y%m%d')
+
+    if update < begin:
+        f.seek(0, 0)
+        return _tdx_future_day_hq(f)
+    elif update > end:
+        return None
+    else:
+        delta = (end - update)
+        factor = delta.days
+        f.seek(-32 * factor, 2)
+        hq_day_df = _tdx_future_day_hq(f)
+        return hq_day_df[hq_day_df.index > update]
+
+
+def tdx_future_min_hq(code, tdx_dir, market='dlce', period='5min', update=dt.datetime(1970, 1, 1)):
     """
     :param code: IL8 主力合约 IL9 期货指数 I1801
     :param tdx_dir: 通达信目录
@@ -72,82 +98,63 @@ def tdx_future_min_hq(code, tdx_dir, market='dlce', period='5min'):
     :return: 返回
     """
 
-    tdx_hq_dir = build_tdx_hq_dir(tdx_dir, market, period)
+    tdx_hq_dir = _build_tdx_hq_dir(tdx_dir, market, period)
     hq_filename = EXCHANGE2TDX_CODE[market] + '#' + code + PERIOD_EXT[period]
     hq_path = os.path.join(tdx_hq_dir, hq_filename)
 
-    assert os.path.exists(hq_path)
-
-    # f = open("temp", "rb")  # reopen the file
-    # f.seek(256, os.SEEK_SET)  # seek
-    #
-    # x = np.fromfile(f, dtype=np.int)  # read the data into numpy
+    if not os.path.exists(hq_path):
+        return None
 
     names = 'date', 'time', 'open', 'high', 'low', 'close', 'openInt', 'volume', 'comment'
     formats = 'u2', 'u2', 'f4', 'f4', 'f4', 'f4', 'i4', 'i4', 'i4'
     offsets = (0, 2) + tuple(range(4, 31, 4))
 
-    dt = np.dtype({'names': names, 'offsets': offsets, 'formats': formats}, align=True)
-    hq_min_df = pd.DataFrame(np.fromfile(hq_path, dt))
-    hq_min_df.index = hq_min_df.date.transform(int2date) + pd.to_timedelta(hq_min_df.time, unit='m')
+    dt_types = np.dtype({'names': names, 'offsets': offsets, 'formats': formats}, align=True)
+    hq_min_df = pd.DataFrame(np.fromfile(hq_path, dt_types))
+    hq_min_df.index = hq_min_df.date.transform(_int2date) + pd.to_timedelta(hq_min_df.time, unit='m')
     hq_min_df.pop('date')
     hq_min_df.pop('time')
     return hq_min_df
 
 
 def save_future_hq(tdx_dir, market='dlce', period='day'):
-    config = get_congfig_handle()
-    last_update = config.get(market.upper(), period.lower() + '_update')
-    date_format = '%Y-%m-%d'
+    future_hq_dir = os.path.join(future_dir, market.lower(), period.lower())
+    if not os.path.exists(future_hq_dir):
+        os.makedirs(future_hq_dir)
 
-    if last_update:
-        last_update = dt.datetime.strptime(last_update, date_format)
+    # dt.datetime.fromtimestamp(os.path.getctime(future_hq_dir))
+
+    if period == 'day':
+        tdx_future_hq_func = tdx_future_day_hq
+    elif period in ['1min', '5min']:
+        tdx_future_hq_func = tdx_future_min_hq
     else:
-        print("never download %s %s hq", market, period)
-        last_update = dt.datetime(1970, 1, 1)
+        print('Wrong period -- %', period)
+        return None
 
-    # put different hq in different market
-    future_mkt_dir = os.path.join(future_dir, market.lower(), period.lower())
-    if not os.path.exists(future_mkt_dir):
-        os.makedirs(future_mkt_dir)
+    # read code list
+    file_name = os.path.join(future_dir, 'dlse_contracts.h5')
 
-    tdx_fdhq_dir = build_tdx_hq_dir(tdx_dir, market, period)
-    assert os.path.exists(tdx_fdhq_dir)
+    # 整体全部读出，因为还不知道如何修改h5文件中单独的一列
+    # futures = pd.read_hdf(file_name, 'table', columns=['update', 'end', 'update'])
+    contracts = pd.read_hdf(file_name, 'table')
+    contracts = contracts[contracts['end'] > contracts['update']]
 
-    # if period == 'day':
-    #     tdx_future_hq_func = tdx_future_day_hq
-    # elif period in ['1min', '5min']:
-    #     tdx_future_hq_func = tdx_future_min_hq
-    # else:
-    #     print('Wrong period -- %', period)
-    #     return None
+    for code, update in zip(contracts.index, contracts['update']):
+        print("======= get %s %s hq =======" % (code, period))
+        file_string = os.path.join(future_hq_dir, code + '.h5')
 
-    # # read code list
-    # file_name = os.path.join(future_dir, 'dlse_contracts.h5')
-    #
-    # if last_update:
-    #     futures = pd.read_hdf(file_name, 'table', columns=['code'], where='end > dt.datetime.now()')
-    # else:
-    #     futures = pd.read_hdf(file_name, 'table', columns=['code'])
-    #
-    # for code in futures.code:
-    #     print("======= get %s %s hq =======", code, period)
-    #     file_string = os.path.join(tdx_fdhq_dir, code)
-    #
-    #     if os.path.exists(file_string):
-    #         pass
-    #     else:
-    #         df = tdx_future_hq_func(code, tdx_dir, market, period)
-    #         if df:
-    #             print("======= There is no %s %s hq =======", code, period)
-    #             continue
-    #         df_future.to_hdf(file_name, 'table', format='table', data_columns=True, complevel=5, complib='blosc')
+        # if os.path.exists(file_string):
+        #     pass
+        # else:
+        df = tdx_future_hq_func(code, tdx_dir, market, period, update)
+        if not isinstance(df, pd.DataFrame) or len(df) == 0:
+            print("======= There is no %s %s hq =======" % (code, period))
+            continue
+        df.to_hdf(file_string, 'table', format='table', appendable=True, complevel=5, complib='blosc')
+        contracts.loc[code, 'update'] = df.index.max()
 
-    last_update = dt.datetime.now().strftime(date_format)
-    config.set(market.upper(), period.lower() + '_update', last_update)
-    fp = get_congfig_file()
-    config.write(fp)
-    fp.close()
+    contracts.to_hdf(file_name, 'table', format='table', data_columns=True, complevel=5, complib='blosc')
 
 
 if __name__ == '__main__':
@@ -170,14 +177,17 @@ if __name__ == '__main__':
 
     to_do = 1
     if to_do:
-        save_future_hq(tdx_dir, market='dlce', period='5min')
+        save_future_hq(tdx_dir, market='dlce', period='day')
 
-        # df = tdx_future_day_hq('ML8', period='day')
-        # df.to_hdf('ML8.day.h5', 'table')
-        # print(df.tail(10))
-        #
-        # df = tdx_future_min_hq('ML8', period='1min')
-        # print(df.tail(10))
-        # df.to_hdf('ML8.lc1.h5', 'table')
+    # df = tdx_future_day_hq('ML8', tdx_dir, period='day', update=dt.datetime(2019, 1, 1))
+    # print(df.head())
+    # print(df.tail())
 
-        # print(tdx_future_basic())
+    # df.to_hdf('ML8.day.h5', 'table')
+    # print(df.tail(10))
+    #
+    # df = tdx_future_min_hq('ML8', period='1min')
+    # print(df.tail(10))
+    # df.to_hdf('ML8.lc1.h5', 'table')
+
+    # print(tdx_future_basic())
