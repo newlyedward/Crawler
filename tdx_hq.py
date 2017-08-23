@@ -4,8 +4,10 @@ import numpy as np
 import pandas as pd
 import datetime as dt
 
-from utils import get_congfig_handle
+from utils import get_congfig_handle, LogHandler
 from settings import *
+
+log = LogHandler('tdx_hq')
 
 
 def tdx_future_basic(tdx_dir):
@@ -84,7 +86,11 @@ def tdx_future_day_hq(code, tdx_dir, market='dlce', period='day', update=dt.date
     else:
         delta = (end - update)
         factor = delta.days
-        f.seek(-32 * factor, 2)
+        try:
+            f.seek(-32 * factor, 2)
+        except OSError:
+            f.seek(0, 0)
+            log.warning('%s trade recoders are few and factor = %d is too big.', code, factor)
         hq_day_df = _tdx_future_day_hq(f)
         return hq_day_df[hq_day_df.index > update]
 
@@ -129,7 +135,7 @@ def save_future_hq(tdx_dir, market='dlce', period='day'):
     elif period in ['1min', '5min']:
         tdx_future_hq_func = tdx_future_min_hq
     else:
-        print('Wrong period -- %', period)
+        log.info('Wrong period -- %', period)
         return None
 
     # read code list
@@ -141,7 +147,7 @@ def save_future_hq(tdx_dir, market='dlce', period='day'):
     contracts = contracts[contracts['end'] > contracts['update']]
 
     for code, update in zip(contracts.index, contracts['update']):
-        print("======= get %s %s hq =======" % (code, period))
+        log.info("======= get %s %s hq =======" % (code, period))
         file_string = os.path.join(future_hq_dir, code + '.h5')
 
         # if os.path.exists(file_string):
@@ -149,9 +155,9 @@ def save_future_hq(tdx_dir, market='dlce', period='day'):
         # else:
         df = tdx_future_hq_func(code, tdx_dir, market, period, update)
         if not isinstance(df, pd.DataFrame) or len(df) == 0:
-            print("======= There is no %s %s hq =======" % (code, period))
+            log.info("======= There is no %s %s hq =======" % (code, period))
             continue
-        df.to_hdf(file_string, 'table', format='table', appendable=True, complevel=5, complib='blosc')
+        df.to_hdf(file_string, 'table', format='table', append=True, complevel=5, complib='blosc')
         contracts.loc[code, 'update'] = df.index.max()
 
     contracts.to_hdf(file_name, 'table', format='table', data_columns=True, complevel=5, complib='blosc')
