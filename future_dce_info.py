@@ -46,6 +46,7 @@ if __name__ == '__main__':
     conn = redis.Redis(redis_host, redis_port, decode_responses=True)
     ua = conn.srandmember('user_agent')
 
+    # 获取大连交易所合约信息
     to_do = 1
     if to_do:
         url = 'http://www.dce.com.cn/publicweb/businessguidelines/queryContractInfo.html'

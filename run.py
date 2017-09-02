@@ -1,2 +1,3 @@
 from scrapy import cmdline
-cmdline.execute("scrapy crawl UserAgentSpider".split())
+
+cmdline.execute("scrapy crawl DceContractSpider".split())

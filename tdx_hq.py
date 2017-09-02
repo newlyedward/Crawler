@@ -181,13 +181,15 @@ if __name__ == '__main__':
         file_name = os.path.join(future_dir, 'future_basic.h5')
         df.to_hdf(file_name, 'table', complevel=5, complib='blosc')
 
-    to_do = 1
+    to_do = 0
     if to_do:
         save_future_hq(tdx_dir, market='dlce', period='day')
 
-    # df = tdx_future_day_hq('ML8', tdx_dir, period='day', update=dt.datetime(2019, 1, 1))
-    # print(df.head())
-    # print(df.tail())
+    df = tdx_future_day_hq('JL8', tdx_dir, period='day')
+    file_string = r'J:\h5\future\dlce\day\JL8.h5'
+    df.to_hdf(file_string, 'table', format='table', append=True, complevel=5, complib='blosc')
+    print(df.head())
+    print(df.tail())
 
     # df.to_hdf('ML8.day.h5', 'table')
     # print(df.tail(10))

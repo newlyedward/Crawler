@@ -6,14 +6,15 @@
 # http://doc.scrapy.org/en/latest/topics/spider-middleware.html
 
 from scrapy.downloadermiddlewares.useragent import UserAgentMiddleware
+from .settings import UA_KEYNAME
 
 
 class RandUserAgentMiddleware(UserAgentMiddleware):
     """This middleware allows spiders to override the user_agent"""
 
     def process_request(self, request, spider):
-        user_agent = spider.server.srandmember('UserAgent')
-        if request.headers.has_key('User-Agent'):
+        user_agent = spider.server.srandmember(UA_KEYNAME)
+        if 'User-Agent' in request.headers:
             request.headers['User-Agent'] = user_agent
             return None
         elif user_agent:

@@ -8,3 +8,5 @@ prepare_request/__pycache__/
 /learn/
 *.h5
 
+/log/
+/html/

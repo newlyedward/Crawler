@@ -9,7 +9,7 @@ from .items import UserAgentItem
 
 class RedisPipeline(object):
     def process_item(self, item, spider):
-        key = spider.name.replace('Spider', '')
         if isinstance(item, UserAgentItem):
+            key = spider.name.replace('Spider', '')
             spider.server.sadd(key, *item['user_agent'])
         return item

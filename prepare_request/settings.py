@@ -71,8 +71,8 @@ DOWNLOADER_MIDDLEWARES = {
 # Configure item pipelines
 # See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    'prepare_request.pipelines.RedisPipeline': 310,
-    # 'scrapy_redis.pipelines.RedisPipeline': 320
+    'scrapy_redis.pipelines.RedisPipeline': 300
+    # 'prepare_request.pipelines.RedisPipeline': 310,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
@@ -90,11 +90,11 @@ ITEM_PIPELINES = {
 
 # Enable and configure HTTP caching (disabled by default)
 # See http://scrapy.readthedocs.org/en/latest/topics/downloader-middleware.html#httpcache-middleware-settings
-# HTTPCACHE_ENABLED = True
-# HTTPCACHE_EXPIRATION_SECS = 0
-# HTTPCACHE_DIR = 'httpcache'
-# HTTPCACHE_IGNORE_HTTP_CODES = []
-# HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
+HTTPCACHE_ENABLED = True
+HTTPCACHE_EXPIRATION_SECS = 0
+HTTPCACHE_DIR = 'httpcache'
+HTTPCACHE_IGNORE_HTTP_CODES = []
+HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
 
 # MONGODB_HOST = '127.0.0.1'
 # MONGODB_PORT = 27017
@@ -110,6 +110,7 @@ DUPEFILTER_CLASS = "scrapy_redis.dupefilter.RFPDupeFilter"
 # use set or list
 REDIS_START_URLS_AS_SET = True
 
-REDIS_HOST = '127.0.0.1'
+# REDIS_URL = 'redis://192.168.2.88'
+REDIS_HOST = '192.168.2.88'
 REDIS_PORT = 6379
-REDIS_KEYNAME = "User_Agent"
+UA_KEYNAME = "user_agent"
