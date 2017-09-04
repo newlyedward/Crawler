@@ -2,11 +2,15 @@
 import scrapy
 from scrapy_redis import defaults
 from scrapy_redis.spiders import RedisSpider
-from scrapy.spiders import Rule
+from scrapy.spiders import CrawlSpider, Rule
 from scrapy.linkextractors import LinkExtractor
+from ..items import DceVarietyItem
+from utils import  LogHandler
+
+log = LogHandler('DceContractSpider')
 
 
-class DceContractSpider(RedisSpider):
+class DceContractSpider(RedisSpider, CrawlSpider):
     name = "DceContractSpider"
     allowed_domains = ["dce.com.cn"]
     start_urls = ['http://www.dce.com.cn/']
@@ -29,7 +33,23 @@ class DceContractSpider(RedisSpider):
         yield scrapy.Request(url=variety_url, callback=self.parse_contract)
         # 还需要提取其他链接
 
-    def pare_contract(self, response):
-        contract_info = response.xpath('//table[1]/tbody/tr/td/p/text()').extract()
-        contract_info = contract_info[1::2]
-        pass
+    def parse_contract(self, response):
+        selectors = response.xpath('//div[@id="zoom"]/descendant::table[1]/tbody/tr/td/p')
+        items = []
+        for selector in selectors:
+            items.append(selector.xpath('string(.)').extract_first().strip())
+
+        keys = items[::2]
+        values = items[1::2]
+
+        variety_dict = dict(zip(keys, values))
+
+        dce_varity_item = DceVarietyItem()
+        try:
+            dce_varity_item['variety'] = variety_dict['交易品种']
+            dce_varity_item['symbol'] = variety_dict['交易代码']
+            dce_varity_item['market'] = variety_dict['上市交易所']
+        except KeyError:
+            log.warning('can not get data from %s' % response.url)
+        else:
+            yield dce_varity_item

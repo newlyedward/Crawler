@@ -22,7 +22,7 @@ def tdx_future_basic(tdx_dir):
     return df
 
 
-def _build_tdx_hq_dir(tdx_dir, market='dlce', period='day'):
+def _build_tdx_hq_dir(tdx_dir, market='dce', period='day'):
     tdx_hq_dir = os.path.join(tdx_dir, 'vipdoc', MARKET_DIR[market], PERIOD_DIR[period])
     assert os.path.exists(tdx_hq_dir)
     return tdx_hq_dir
@@ -51,7 +51,7 @@ def _tdx_future_day_hq(file_handler):
     return hq_day_df
 
 
-def tdx_future_day_hq(code, tdx_dir, market='dlce', period='day', update=dt.datetime(1970, 1, 1)):
+def tdx_future_day_hq(code, tdx_dir, market='dce', period='day', update=dt.datetime(1970, 1, 1)):
     """
     :param update: 最后更新日期
     :param code: IL8 主力合约 IL9 期货指数 I1801
@@ -95,7 +95,7 @@ def tdx_future_day_hq(code, tdx_dir, market='dlce', period='day', update=dt.date
         return hq_day_df[hq_day_df.index > update]
 
 
-def tdx_future_min_hq(code, tdx_dir, market='dlce', period='5min', update=dt.datetime(1970, 1, 1)):
+def tdx_future_min_hq(code, tdx_dir, market='dce', period='5min', update=dt.datetime(1970, 1, 1)):
     """
     :param code: IL8 主力合约 IL9 期货指数 I1801
     :param tdx_dir: 通达信目录
@@ -123,7 +123,7 @@ def tdx_future_min_hq(code, tdx_dir, market='dlce', period='5min', update=dt.dat
     return hq_min_df
 
 
-def save_future_hq(tdx_dir, market='dlce', period='day'):
+def save_future_hq(tdx_dir, market='dce', period='day'):
     future_hq_dir = os.path.join(future_dir, market.lower(), period.lower())
     if not os.path.exists(future_hq_dir):
         os.makedirs(future_hq_dir)
@@ -139,7 +139,7 @@ def save_future_hq(tdx_dir, market='dlce', period='day'):
         return None
 
     # read code list
-    file_name = os.path.join(future_dir, 'dlse_contracts.h5')
+    file_name = os.path.join(future_dir, 'dce_contracts.h5')
 
     # 整体全部读出，因为还不知道如何修改h5文件中单独的一列
     # futures = pd.read_hdf(file_name, 'table', columns=['update', 'end', 'update'])
@@ -178,15 +178,15 @@ if __name__ == '__main__':
     to_do = 0
     if to_do:
         df = tdx_future_basic(tdx_dir)
-        file_name = os.path.join(future_dir, 'future_basic.h5')
+        file_name = os.path.join(future_dir, CONTRACTS_FILE)
         df.to_hdf(file_name, 'table', complevel=5, complib='blosc')
 
-    to_do = 0
+    to_do = 1
     if to_do:
-        save_future_hq(tdx_dir, market='dlce', period='day')
+        save_future_hq(tdx_dir, market='dce', period='day')
 
     df = tdx_future_day_hq('JL8', tdx_dir, period='day')
-    file_string = r'J:\h5\future\dlce\day\JL8.h5'
+    file_string = r'J:\h5\future\dce\day\JL8.h5'
     df.to_hdf(file_string, 'table', format='table', append=True, complevel=5, complib='blosc')
     print(df.head())
     print(df.tail())

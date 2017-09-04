@@ -4,9 +4,11 @@ import redis
 import pandas as pd
 import datetime as dt
 from utils import get_html_tree, get_congfig_handle
+from settings import *
 
 
-def dlse_contract_info(url, ua):
+
+def dce_contract_info(url, ua):
     resp = get_html_tree(url, ua)
 
     # cols = resp.xpath('//div[@class="dataArea"]/table[@cellpadding="0"]/tr/th/text()')
@@ -49,11 +51,11 @@ if __name__ == '__main__':
     # 获取大连交易所合约信息
     to_do = 1
     if to_do:
-        url = 'http://www.dce.com.cn/publicweb/businessguidelines/queryContractInfo.html'
+        url = CONTRACTS_URL
 
-        df = dlse_contract_info(url, ua)
+        df = dce_contract_info(url, ua)
 
-        file_name = os.path.join(future_dir, 'dlse_contracts.h5')
+        file_name = os.path.join(future_dir, CONTRACTS_FILE)
         df_future = df[~df['delivery'].isnull()]
         if os.path.exists(file_name):
             df = pd.read_hdf(file_name, 'table', columns=['update'])

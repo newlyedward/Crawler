@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-MARKET_LIST = ('cffe',  # 中金所
-               'zcce',  # 郑州商品交易所
-               'dlce',  # 大连商品交易所
+MARKET_LIST = ('cffex',  # 中金所
+               'czce',  # 郑州商品交易所
+               'dce',  # 大连商品交易所
                'shfe',  # 上海期货交易所
                'shse',  # 上海证券交易所
                'szse',  # 深圳证券交易所
@@ -15,9 +15,9 @@ EXCHANGE2TDX_CODE = {MARKET_LIST[0]: '47',  # 47：中金所
                      MARKET_LIST[3]: '30',  # 30：上海期货交易所
                      }
 
-MARKET_DIR = {'cffe': 'ds',  # 中金所
-              'zcce': 'ds',  # 郑州商品交易所
-              'dlce': 'ds',  # 大连商品交易所
+MARKET_DIR = {'cffex': 'ds',  # 中金所
+              'czce': 'ds',  # 郑州商品交易所
+              'dce': 'ds',  # 大连商品交易所
               'shfe': 'ds',  # 上海期货交易所
               'shse': 'sh',  # 上海证券交易所
               'szse': 'sz',  # 深圳证券交易所
@@ -33,4 +33,6 @@ PERIOD_EXT = {'day': '.day',  # 日线
               '1min': '.lc1'
               }
 
-# --------------------- dlse ------------------------------------------
+# --------------------- dcee ------------------------------------------
+CONTRACTS_URL = 'http://www.dce.com.cn/publicweb/businessguidelines/queryContractInfo.html'
+CONTRACTS_FILE = 'dce_contracts.h5'

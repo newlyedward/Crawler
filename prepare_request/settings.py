@@ -32,7 +32,7 @@ ROBOTSTXT_OBEY = True
 # Configure a delay for requests for the same website (default: 0)
 # See http://scrapy.readthedocs.org/en/latest/topics/settings.html#download-delay
 # See also autothrottle settings and docs
-DOWNLOAD_DELAY = 1
+DOWNLOAD_DELAY = 100
 # The download delay setting will honor only one of:
 # CONCURRENT_REQUESTS_PER_DOMAIN = 16
 # CONCURRENT_REQUESTS_PER_IP = 16
@@ -71,7 +71,8 @@ DOWNLOADER_MIDDLEWARES = {
 # Configure item pipelines
 # See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    'scrapy_redis.pipelines.RedisPipeline': 300
+    # 'scrapy_redis.pipelines.RedisPipeline': 300,
+    'prepare_request.pipelines.MongoDceVarietyPipeline': 300,
     # 'prepare_request.pipelines.RedisPipeline': 310,
 }
 
@@ -111,6 +112,12 @@ DUPEFILTER_CLASS = "scrapy_redis.dupefilter.RFPDupeFilter"
 REDIS_START_URLS_AS_SET = True
 
 # REDIS_URL = 'redis://192.168.2.88'
-REDIS_HOST = '192.168.2.88'
+REDIS_HOST = '192.168.2.130'
 REDIS_PORT = 6379
 UA_KEYNAME = "user_agent"
+
+MONGODB_HOST = "192.168.130"
+MONGODB_PORT = 27017
+MONGODB_DB = "futures"
+MONGODB_COLLECTION = "variety"
+

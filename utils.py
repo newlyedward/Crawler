@@ -181,18 +181,17 @@ if __name__ == '__main__':
 
     import redis
 
-    conn = redis.Redis('192.168.2.88', 6379, decode_responses=True)
+    conn = redis.Redis('192.168.2.130', 6379, decode_responses=True)
 
     todo = 1
     if todo:
         ua_list = get_ua_list()
         conn.sadd('user_agent', *ua_list)
 
-if __name__ == '__main__':
-    log = LogHandler(os.path.basename(__file__))
-    log.debug('this is a debug msg')
-    log.info('this is a info msg')
-    log.warning('this is a warning msg')
-    log.error('this is a error msg')
-    log.fatal('this is a fatal msg')
-    log.critical('this is a critical msg')
+    # log = LogHandler(os.path.basename(__file__))
+    # log.debug('this is a debug msg')
+    # log.info('this is a info msg')
+    # log.warning('this is a warning msg')
+    # log.error('this is a error msg')
+    # log.fatal('this is a fatal msg')
+    # log.critical('this is a critical msg')
