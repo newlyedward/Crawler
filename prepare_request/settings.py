@@ -32,13 +32,17 @@ ROBOTSTXT_OBEY = True
 # Configure a delay for requests for the same website (default: 0)
 # See http://scrapy.readthedocs.org/en/latest/topics/settings.html#download-delay
 # See also autothrottle settings and docs
-DOWNLOAD_DELAY = 100
+DOWNLOAD_DELAY = 3
+# DOWNLOAD_TIMEOUT = 180      # 10mins
 # The download delay setting will honor only one of:
-# CONCURRENT_REQUESTS_PER_DOMAIN = 16
+# CONCURRENT_REQUESTS_PER_DOMAIN = 8
 # CONCURRENT_REQUESTS_PER_IP = 16
 
 # Disable cookies (enabled by default)
-# COOKIES_ENABLED = False
+COOKIES_ENABLED = False
+
+RETRY_ENABLED = True
+RETRY_TIMES = 10  # initial response + 10 retries = 11 requests
 
 # Disable Telnet Console (enabled by default)
 # TELNETCONSOLE_ENABLED = False
@@ -51,15 +55,24 @@ DOWNLOAD_DELAY = 100
 
 # Enable or disable spider middlewares
 # See http://scrapy.readthedocs.org/en/latest/topics/spider-middleware.html
-# SPIDER_MIDDLEWARES = {
-#    'lianjia.middlewares.TutorialSpiderMiddleware': 543,
-# }
+SPIDER_MIDDLEWARES = {
+    # 'lianjia.middlewares.TutorialSpiderMiddleware': 543,
+    # 'scrapy.spidermiddlewares.httperror.HttpErrorMiddleware': None,
+}
 
 # Enable or disable downloader middlewares
 # See http://scrapy.readthedocs.org/en/latest/topics/downloader-middleware.html
 DOWNLOADER_MIDDLEWARES = {
     'prepare_request.middlewares.RandUserAgentMiddleware': 510,
-    'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': None
+    # 'scrapy.downloadermiddlewares.downloadtimeout.DownloadTimeoutMiddleware': None,
+    'scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware': None,
+    'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': None,
+    # 'scrapy.downloadermiddlewares.retry.RetryMiddleware': None,
+    # 'scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware': None,
+    # 'scrapy.downloadermiddlewares.redirect.RedirectMiddleware': None,
+    # 'scrapy.downloadermiddlewares.cookies.CookiesMiddleware': None,
+    'scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware': None,
+
 }
 
 # Enable or disable extensions
@@ -92,9 +105,9 @@ ITEM_PIPELINES = {
 # Enable and configure HTTP caching (disabled by default)
 # See http://scrapy.readthedocs.org/en/latest/topics/downloader-middleware.html#httpcache-middleware-settings
 HTTPCACHE_ENABLED = True
-HTTPCACHE_EXPIRATION_SECS = 0
+HTTPCACHE_EXPIRATION_SECS = 7200
 HTTPCACHE_DIR = 'httpcache'
-HTTPCACHE_IGNORE_HTTP_CODES = []
+HTTPCACHE_IGNORE_HTTP_CODES = [500, 502, 503, 504, 408]
 HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
 
 # MONGODB_HOST = '127.0.0.1'
@@ -108,6 +121,14 @@ SCHEDULER = "scrapy_redis.scheduler.Scheduler"
 # Ensure all spiders share same duplicates filter through redis.
 DUPEFILTER_CLASS = "scrapy_redis.dupefilter.RFPDupeFilter"
 
+# Whether to persist or clear redis queue.
+SCHEDULER_PERSIST = False
+# Whether to flush redis queue on start.
+SCHEDULER_FLUSH_ON_START = True
+# How many seconds to wait before closing if no message is received.
+# SCHEDULER_IDLE_BEFORE_CLOSE : 3600
+
+
 # use set or list
 REDIS_START_URLS_AS_SET = True
 
@@ -116,8 +137,7 @@ REDIS_HOST = '192.168.2.130'
 REDIS_PORT = 6379
 UA_KEYNAME = "user_agent"
 
-MONGODB_HOST = "192.168.130"
+MONGODB_HOST = "192.168.2.130"
 MONGODB_PORT = 27017
 MONGODB_DB = "futures"
 MONGODB_COLLECTION = "variety"
-

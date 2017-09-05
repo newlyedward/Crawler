@@ -5,7 +5,7 @@ from scrapy_redis.spiders import RedisSpider
 from scrapy.spiders import CrawlSpider, Rule
 from scrapy.linkextractors import LinkExtractor
 from ..items import DceVarietyItem
-from utils import  LogHandler
+from utils import LogHandler
 
 log = LogHandler('DceContractSpider')
 
@@ -34,7 +34,14 @@ class DceContractSpider(RedisSpider, CrawlSpider):
         # 还需要提取其他链接
 
     def parse_contract(self, response):
-        selectors = response.xpath('//div[@id="zoom"]/descendant::table[1]/tbody/tr/td/p')
+
+        selectors = response.xpath(
+            '//div[@id="zoom"]/descendant::table[@class="MsoNormalTable"][1]/tbody/tr/td')
+
+        if not selectors:
+            selectors = response.xpath(
+                '//div[@id="zoom"]/descendant::table[1]/tbody/tr/td')
+
         items = []
         for selector in selectors:
             items.append(selector.xpath('string(.)').extract_first().strip())

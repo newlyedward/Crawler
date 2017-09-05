@@ -4,7 +4,7 @@
 #
 # Don't forget to add your pipeline to the ITEM_PIPELINES setting
 # See: http://doc.scrapy.org/en/latest/topics/item-pipeline.html
-import pymongo
+from pymongo import MongoClient
 from .items import DceVarietyItem
 
 
@@ -33,7 +33,7 @@ class MongoDceVarietyPipeline(object):
         )
 
     def open_spider(self, spider):
-        self.client = pymongo.MongoClient(self.mongo_host, self.mongo_port)
+        self.client = MongoClient(self.mongo_host, self.mongo_port)
         self.db = self.client[self.mongo_db]
 
     def close_spider(self, spider):
