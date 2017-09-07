@@ -33,9 +33,6 @@ PERIOD_EXT = {'day': '.day',  # 日线
               }
 
 # --------------------- dce ------------------------------------------
-CONTRACTS_FILE = '_contracts.h5'
-MEMBER_POS_BATCH_DIR = 'memberpos'
-
-CONTRACTS_DCE_URL = 'http://www.dce.com.cn/publicweb/businessguidelines/queryContractInfo.html'
+CONTRACTS_DCE_URL = 'http://www.dce.com.cn/publicweb/businessguidelines/queryContractInfoVariety.html?variety='
 MEMBER_POS_BATCH_DCE_URL = 'http://www.dce.com.cn/publicweb/quotesdata/exportMemberDealPosiQuotesBatchData.html'
 

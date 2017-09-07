@@ -1,23 +1,23 @@
 # -*- coding: utf-8 -*-
-import os
 import redis
 import requests
 import pandas as pd
 import datetime as dt
-from utils import get_html_tree, get_congfig_handle
+from pymongo import MongoClient
+from utils import get_congfig_handle, LogHandler
 from settings import *
+
+log = LogHandler('future_dce_info')
 
 
 class FutureInfo(object):
     def __init__(self, market):
         self.market = market
         config = get_congfig_handle()
-        base_dir = config.get('FinData', 'base_dir')
 
-        future_dir = os.path.join(base_dir, 'future')
-        if not os.path.exists(future_dir):
-            os.makedirs(future_dir)
-        self.future_dir = future_dir
+        mongo_host = config.get('Mongo', 'host')
+        mongo_port = config.getint('Mongo', 'port')
+        self.mongo = MongoClient(mongo_host, mongo_port)
 
         redis_host = config.get('Redis', 'host')
         redis_port = config.getint('Redis', 'port')
@@ -25,10 +25,19 @@ class FutureInfo(object):
         self.ua_key = config.get('Redis', 'ua_key')
         self.conn = redis.Redis(redis_host, redis_port, decode_responses=True)
 
+    def __del__(self):
+        self.mongo.close()
+
     def member_position_batch(self, ):
         pass
 
-    def contracts_info(self, ):
+    def save_contracts(self):
+        pass
+
+    def contracts(self, varietyid):
+        pass
+
+    def varieties(self):
         pass
 
 
@@ -36,7 +45,7 @@ class FutureDceInfo(FutureInfo):
     def __init__(self):
         super(FutureDceInfo, self).__init__('dce')
 
-    def member_position_batch(self, ):
+    def member_position_batch(self):
         params = {'memberDealPosiQuotes.variety': 'a',  # 不起作用
                   'memberDealPosiQuotes.trade_type': '0',
                   'contract.contract_id': 'all',
@@ -53,44 +62,79 @@ class FutureDceInfo(FutureInfo):
                 f.write(chunk)
         f.close()
 
-    def contracts_info(self, ):
-        ua = self.conn.srandmember('self.ua_key')
-        resp = get_html_tree(CONTRACTS_DCE_URL, ua)
+    def save_contracts(self):
+        # get varietyid from database
+        db = self.mongo['futures']
+        records = db['variety'].find(projection=['varietyid', 'delivery_months'])
 
-        # cols = resp.xpath('//div[@class="dataArea"]/table[@cellpadding="0"]/tr/th/text()')
-        cols = ['variety', 'code', 'unit', 'change', 'begin', 'end', 'delivery']
-        content = resp.xpath('//div[@class="dataArea"]/table[@cellpadding="0"]/tr/td/text()')
-        contract_info = {cols[0]: content[::7],
-                         cols[1]: content[1::7],
-                         cols[2]: content[2::7],
-                         cols[3]: content[3::7],
-                         cols[4]: content[4::7],
-                         cols[5]: content[5::7],
-                         cols[6]: content[6::7],
-                         }
-        df = pd.DataFrame(contract_info)
-        df.index = df[cols[1]]
-        df.pop(cols[1])
-        df[cols[2]] = df[cols[2]].astype('int')
-        df[cols[3]] = df[cols[3]].str.strip().astype('float')
-        df[cols[4]] = pd.to_datetime(df[cols[4]], errors='coerce')
-        df[cols[5]] = pd.to_datetime(df[cols[5]], errors='coerce')
-        df[cols[6]] = pd.to_datetime(df[cols[6]], errors='coerce')
+        if records.count() < 1:
+            log.info('There is no varieties in database')
+            return
 
-        file_name = os.path.join(self.future_dir, self.market + CONTRACTS_FILE)
-        df_future = df[~df['delivery'].isnull()]
-        if os.path.exists(file_name):
-            df = pd.read_hdf(file_name, 'table', columns=['update'])
-            df_future['update'] = df['update']
-        else:
-            df_future.loc[:, 'update'] = dt.datetime(1970, 1, 1)
-        df_future.to_hdf(file_name, 'table', format='table', data_columns=True, complevel=5, complib='blosc')
+        for record in records:
+            varietyid = record['varietyid']
+
+            months_num = len(record['delivery_months'])
+            today = int(dt.datetime.now().strftime('%Y%m%d'))
+            contracts_num = db['contract'].find({'varietyid': varietyid, 'end': {'$gt': today}}).count()
+
+            # 如果合约存在，不更新合约， 不对当月是否有合约交割进行判断
+            if months_num <= contracts_num:
+                log.info('%s contracts all are existed' % varietyid)
+                continue
+
+            df = self.contracts(varietyid.lower())
+
+            try:
+                last = list(
+                    db['contract'].find({'varietyid': varietyid}, projection={'_id': 0, 'begin': 1})
+                        .sort('begin', -1).limit(1))[0]['begin']
+            except:
+                update_df = df
+            else:
+                update_df = df[df['begin'] > last]
+
+            if update_df.empty:
+                continue
+
+            contracts = update_df[update_df['contractid'].str.match('\w{1,2}\d{4}$')].to_dict('records')
+            if not contracts:
+                log.info('Don not get new records of variety %s' % varietyid)
+                continue
+
+            result = db['contract'].insert_many(contracts)
+            log.info('Insert %d records of variety %s' % (len(result.inserted_ids), varietyid))
+
+            # 期权暂时不处理
+            # options = update_df[update_df['contractid'].str.match('\w{1,2}\d{4}-\w-\d+')].to_dict('records')
+            # if not options:
+            #     continue
+            #
+            # result = db['option'].insert_many(options)
+            # log.info('Insert %d records of variety %s' % (len(result.inserted_ids), varietyid))
+
+    def contracts(self, varietyid):
+        # 提取数据
+        dfs = pd.read_html(CONTRACTS_DCE_URL + varietyid, header=0, skiprows=0)
+        # {'交易单位': 10,                    # int
+        #  '合约代码': 'a0311',
+        #  '品种': '豆一',
+        #  '开始交易日': 20020522,             # int
+        #  '最后交割日': '20031121',           # str 期权没有交割日
+        #  '最后交易日': 20031114,             # int
+        #  '最小变动价位': 1.0}                # int
+        dfs[0].columns = ['varietyid', 'contractid', 'unit', 'change', 'begin', 'end', 'delivery']
+        dfs[0].varietyid = varietyid.upper()
+        return dfs[0]
 
 
 if __name__ == '__main__':
 
     # 获取大连交易所合约信息
     future_dce_info = FutureDceInfo()
-    to_do = 1
+    to_do = 0
     if to_do:
-        future_dce_info.contracts_info()
+        df = future_dce_info.contracts('i')
+        print(df.head())
+
+    future_dce_info.save_contracts()

@@ -6,7 +6,11 @@
 # See: http://doc.scrapy.org/en/latest/topics/item-pipeline.html
 from pymongo import MongoClient
 from .items import DceVarietyItem
+# import sys
+# sys.path.append('G:/Code/Crawler')
+from utils import LogHandler
 
+log = LogHandler('pipelines')
 
 # class RedisPipeline(object):
 #     def process_item(self, item, spider):
@@ -41,6 +45,7 @@ class MongoDceVarietyPipeline(object):
 
     def process_item(self, item, spider):
         if isinstance(item, DceVarietyItem):
-            self.db[self.collection].update({'variety': item['variety']},
+            self.db[self.collection].update({'varietyid': item['varietyid']},
                                             {'$set': dict(item)}, upsert=True)
+            log.info('Update variety %s' % item['varietyid'])
             return item
