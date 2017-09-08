@@ -31,6 +31,9 @@ class TdxQuotes(object):
         if not os.path.exists(self.future_dir):
             os.makedirs(self.future_dir)
 
+    def __del__(self):
+        self.mongo.close()
+
     def set_period(self, period):
         self.period = period.lower()
         self.tdx_hq_dir = os.path.join(self.tdx_dir, 'vipdoc', MARKET_DIR[self.market], PERIOD_DIR[self.period])
@@ -54,14 +57,15 @@ class TdxQuotes(object):
 
     # def int2date(x):
     #     return dt.datetime(int(x / 10000), int(x % 10000 / 100), x % 100)
-
-    def _int2date(self, x):
+    @staticmethod
+    def _int2date(x):
         year = int(x / 2048) + 2004
         month = int(x % 2048 / 100)
         day = x % 2048 % 100
         return dt.datetime(year, month, day)
 
-    def _tdx_future_day_hq(self, file_handler):
+    @staticmethod
+    def _tdx_future_day_hq(file_handler):
         names = 'date', 'open', 'high', 'low', 'close', 'openInt', 'volume', 'comment'
         offsets = tuple(range(0, 31, 4))
         formats = 'i4', 'f4', 'f4', 'f4', 'f4', 'i4', 'i4', 'i4'
@@ -188,7 +192,7 @@ if __name__ == '__main__':
     if to_do:
         dce_tdx_hq.save_future_hq()
 
-    df = dce_tdx_hq.tdx_future_day_hq('il8',)
+    df = dce_tdx_hq.tdx_future_day_hq('il8', )
     file_string = r'J:\h5\future\dce\day\JL8.h5'
     df.to_hdf(file_string, 'table', format='table', append=True, complevel=5, complib='blosc')
     print(df.head())

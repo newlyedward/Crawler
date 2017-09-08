@@ -6,6 +6,7 @@ from wtforms.validators import Required
 import pandas as pd
 
 app = Flask(__name__, static_url_path='')
+Bootstrap(app)
 
 
 # class NameForm(FlaskForm):
@@ -33,16 +34,26 @@ app = Flask(__name__, static_url_path='')
 
 
 @app.route('/')
-def index():
-    return render_template('index.html')
+def home():
+    return render_template('home.html', title_name='Welcome')
 
 
-@app.route('/data/', methods=['POST'])
-def data():
-    file_string = r'J:\h5\future\dlce\day\JL8.h5'
-    df = pd.read_hdf(file_string, 'table')
-    dfj = df.to_json(orient='split', date_format='epoch', date_unit='ms')
-    return dfj
+@app.route('/service')
+def service():
+    return 'service'
+
+
+@app.route('/about')
+def about():
+    return 'about'
+
+
+# @app.route('/data/', methods=['POST'])
+# def data():
+#     file_string = r'J:\h5\future\dlce\day\JL8.h5'
+#     df = pd.read_hdf(file_string, 'table')
+#     dfj = df.to_json(orient='split', date_format='epoch', date_unit='ms')
+#     return dfj
 
 
 if __name__ == '__main__':
