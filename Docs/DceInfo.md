@@ -21,4 +21,25 @@
         .MsoNormalTable > tbody:nth-child(1) > tr:nth-child(1) > td:nth-child(1)
         #zoom > table:nth-child(3) > tbody:nth-child(1) > tr:nth-child(1) > td:nth-child(1)
         
+### 日成交持仓排名
+    批量下载
+    http://www.dce.com.cn/publicweb/quotesdata/exportMemberDealPosiQuotesBatchData.html
+    memberDealPosiQuotes.variety=a       不起作用
+    memberDealPosiQuotes.trade_type=0
+    contract.contract_id=all
+    contract.variety_id=a  不起作用
+    year=2017              缺省是当天
+    month=8                起始月份为0
+    day=04
+    batchExportFlag=batch
+    http://www.dce.com.cn/publicweb/quotesdata/exportMemberDealPosiQuotesData.html
+    memberDealPosiQuotes.variety=a
+    memberDealPosiQuotes.trade_type=0
+    contract.contract_id=all
+    contract.variety_id=a
+    year=2017
+    month=8
+    day=04
+    exportFlag=txt
+        
     
