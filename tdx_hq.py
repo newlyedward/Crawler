@@ -7,32 +7,17 @@ from pymongo import MongoClient
 
 from utils import get_congfig_handle, LogHandler
 from settings import *
+from future import Future
 
 log = LogHandler('tdx_hq')
 
 
-class TdxQuotes(object):
+class TdxFutureQuotes(Future):
     def __init__(self, market='dce', period='day'):
-        self.period = ''
+        super(TdxFutureQuotes, self).__init__(market, period)
         self.tdx_hq_dir = ''
+        self.tdx_dir = super(TdxFutureQuotes, self).config.get('TDX', 'tdx_dir')
         self.set_period(period)
-        self.market = market.lower()
-
-        config = get_congfig_handle()
-
-        self.tdx_dir = config.get('TDX', 'tdx_dir')
-
-        mongo_host = config.get('Mongo', 'host')
-        mongo_port = config.getint('Mongo', 'port')
-        self.mongo = MongoClient(mongo_host, mongo_port)
-
-        base_dir = config.get('FinData', 'base_dir')
-        self.future_dir = os.path.join(base_dir, 'future')
-        if not os.path.exists(self.future_dir):
-            os.makedirs(self.future_dir)
-
-    def __del__(self):
-        self.mongo.close()
 
     def set_period(self, period):
         self.period = period.lower()
@@ -66,14 +51,14 @@ class TdxQuotes(object):
 
     @staticmethod
     def _tdx_future_day_hq(file_handler):
-        names = 'date', 'open', 'high', 'low', 'close', 'openInt', 'volume', 'comment'
+        names = 'datetime', 'open', 'high', 'low', 'close', 'openInt', 'volume', 'comment'
         offsets = tuple(range(0, 31, 4))
         formats = 'i4', 'f4', 'f4', 'f4', 'f4', 'i4', 'i4', 'i4'
 
         dt_types = np.dtype({'names': names, 'offsets': offsets, 'formats': formats}, align=True)
         hq_day_df = pd.DataFrame(np.fromfile(file_handler, dt_types))
-        hq_day_df.index = pd.to_datetime(hq_day_df.date.astype('str'), errors='coerce')
-        hq_day_df.pop('date')
+        hq_day_df.index = pd.to_datetime(hq_day_df['datetime'].astype('str'), errors='coerce')
+        hq_day_df.pop('datetime')
         return hq_day_df
 
     def tdx_future_day_hq(self, contractid, update=dt.datetime(1970, 1, 1)):
@@ -144,12 +129,12 @@ class TdxQuotes(object):
         hq_min_df.pop('time')
         return hq_min_df
 
-    def save_future_hq(self):
-        future_hq_dir = os.path.join(self.future_dir, self.market, self.period)
-        if not os.path.exists(future_hq_dir):
-            os.makedirs(future_hq_dir)
+    def to_mongodb(self):
+        contract_df = self.variety()
 
-        # dt.datetime.fromtimestamp(os.path.getctime(future_hq_dir))
+        if not isinstance(contract_df, pd.DataFrame) or contract_df.empty:
+            log.info('Data variety is empty')
+            return
 
         if self.period == 'day':
             tdx_future_hq_func = self.tdx_future_day_hq
@@ -159,50 +144,97 @@ class TdxQuotes(object):
             log.info('Wrong period -- %', self.period)
             return None
 
-        # read contractid list
-        file_name = os.path.join(self.future_dir, 'dce_contracts.h5')
+        collection = self.db['quote']
 
-        # 整体全部读出，因为还不知道如何修改h5文件中单独的一列
-        # futures = pd.read_hdf(file_name, 'table', columns=['update', 'end', 'update'])
-        contracts = pd.read_hdf(file_name, 'table')
-        contracts = contracts[contracts['end'] > contracts['update']]
+        # 存储指数和主力合约
+        for varietyid in contract_df['varietyid']:
+            contractid = varietyid + 'L8'  # 主力合约
+            try:
+                last = list(
+                    collection.find({'contractid': contractid}, projection={'_id': 0, 'datetime': 1})
+                        .sort('datetime', -1).limit(1))[0]['datetime']
+            except:
+                quote_df = tdx_future_hq_func(contractid)
+            else:
+                quote_df = tdx_future_hq_func(contractid, last)
 
-        for contractid, update in zip(contracts.index, contracts['update']):
-            log.info("======= get %s %s hq =======" % (contractid, self.period))
-            file_string = os.path.join(future_hq_dir, contractid + '.h5')
+            quote_df['contractid'] = contractid
 
-            # if os.path.exists(file_string):
-            #     pass
-            # else:
-            df = tdx_future_hq_func(contractid, update)
-            if not isinstance(df, pd.DataFrame) or len(df) == 0:
-                log.info("======= There is no %s %s hq =======" % (contractid, self.period))
+            quote = quote_df.to_dict('records')
+            if not quote:
+                log.info('Don not get new quotes of %s' % contractid)
                 continue
-            df.to_hdf(file_string, 'table', format='table', append=True, complevel=5, complib='blosc')
-            contracts.loc[contractid, 'update'] = df.index.max()
 
-        contracts.to_hdf(file_name, 'table', format='table', data_columns=True, complevel=5, complib='blosc')
+            result = collection.insert_many(quote)
+            log.debug('Insert %d quotes of variety %s' % (len(result.inserted_ids), contractid))
+
+    @staticmethod
+    def _to_hdf(contractid, future_hq_dir, tdx_future_hq_func):
+        file_string = os.path.join(future_hq_dir, contractid.lower() + '.h5')
+        try:
+            last = pd.read_hdf(file_string, 'table', start=-1)
+            update = list(last.index)[0]
+        except:
+            quote_df = tdx_future_hq_func(contractid)
+        else:
+            quote_df = tdx_future_hq_func(contractid, update)
+
+        if isinstance(quote_df, pd.DataFrame) and not quote_df.empty:
+            quote_df.to_hdf(file_string, 'table', format='table', append=True, complevel=5, complib='blosc')
+
+    def to_hdf(self, update):
+        contract_df = self.variety()
+
+        if not isinstance(contract_df, pd.DataFrame) or contract_df.empty:
+            log.info('Data variety is empty')
+            return
+
+        future_hq_dir = os.path.join(self.future_dir, self.market, self.period)
+        if not os.path.exists(future_hq_dir):
+            os.makedirs(future_hq_dir)
+
+        if self.period == 'day':
+            tdx_future_hq_func = self.tdx_future_day_hq
+        elif self.period in ['1min', '5min']:
+            tdx_future_hq_func = self.tdx_future_min_hq
+        else:
+            log.info('Wrong period -- %', self.period)
+            return None
+
+        # get varietyid list from mongodb and construct index an continue contacts
+        # 存储指数和主力合约
+        for varietyid in contract_df['varietyid']:
+            contractid = varietyid + 'l8'  # 主力合约
+            self._to_hdf(contractid, future_hq_dir, tdx_future_hq_func)
+
+            contractid = varietyid + 'l9'  # 主力合约
+            self._to_hdf(contractid, future_hq_dir, tdx_future_hq_func)
+
+        if update:
+            contract_df = self.contract(update=update)
+        else:
+            contract_df = self.contract()
+
+        if contract_df.empty:
+            log.info('Data variety is empty')
+            return
+
+        for contractid in contract_df['contractid']:
+            self._to_hdf(contractid, future_hq_dir, tdx_future_hq_func)
 
 
 if __name__ == '__main__':
+    dce_tdx_hq = TdxFutureQuotes()
 
-    dce_tdx_hq = TdxQuotes()
+    # to_do = 1
+    # if to_do:
+    #     dce_tdx_hq.save_future_hq()
 
-    to_do = 1
-    if to_do:
-        dce_tdx_hq.save_future_hq()
+    # df = dce_tdx_hq.tdx_future_day_hq('il8')
+    # file_string = r'J:\h5\future\dce\day\JL8.h5'
+    # df.to_hdf(file_string, 'table', format='table', append=True, complevel=5, complib='blosc')
+    # print(df.head())
+    # print(df.tail())
 
-    df = dce_tdx_hq.tdx_future_day_hq('il8', )
-    file_string = r'J:\h5\future\dce\day\JL8.h5'
-    df.to_hdf(file_string, 'table', format='table', append=True, complevel=5, complib='blosc')
-    print(df.head())
-    print(df.tail())
-
-    # df.to_hdf('ML8.day.h5', 'table')
-    # print(df.tail(10))
-    #
-    # df = tdx_future_min_hq('ML8', period='1min')
-    # print(df.tail(10))
-    # df.to_hdf('ML8.lc1.h5', 'table')
-
-    # print(tdx_future_basic())
+    # dce_tdx_hq.to_hdf()
+    dce_tdx_hq.to_hdf(update=dt.datetime.now())
