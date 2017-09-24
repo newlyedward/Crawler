@@ -11,7 +11,7 @@ from pymongo import MongoClient
 from utils import get_congfig_handle, LogHandler
 from settings import *
 
-log = LogHandler('future')
+log = LogHandler('instrument')
 
 
 class Instrument(object):

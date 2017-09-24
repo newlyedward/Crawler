@@ -40,15 +40,6 @@ class TdxFutureQuotes(Future):
         df.loc[df['market'] == 'QS', 'market'] = 'shfe'
         return df
 
-    # def int2date(x):
-    #     return dt.datetime(int(x / 10000), int(x % 10000 / 100), x % 100)
-    @staticmethod
-    def _int2date(x):
-        year = int(x / 2048) + 2004
-        month = int(x % 2048 / 100)
-        day = x % 2048 % 100
-        return dt.datetime(year, month, day)
-
     @staticmethod
     def _tdx_future_day_hq(file_handler):
         names = 'datetime', 'open', 'high', 'low', 'close', 'openInt', 'volume', 'comment'
@@ -92,16 +83,30 @@ class TdxFutureQuotes(Future):
             return self._tdx_future_day_hq(f)
         elif update > end:
             return None
-        else:
-            delta = (end - update)
-            factor = delta.days
-            try:
-                f.seek(-32 * factor, 2)
-            except OSError:
-                f.seek(0, 0)
-                log.warning('%s trade recoders are few and factor = %d is too big.', contractid, factor)
-            hq_day_df = self._tdx_future_day_hq(f)
-            return hq_day_df[hq_day_df.index > update]
+
+        delta = (end - update)
+        factor = delta.days
+        try:
+            f.seek(-32 * factor, 2)
+        except OSError:
+            f.seek(0, 0)
+            log.warning('%s trade recoders are few and factor = %d is too big.', contractid, factor)
+        hq_day_df = self._tdx_future_day_hq(f)
+        return hq_day_df[hq_day_df.index > update]
+
+    def _tdx_future_min_hq(self, file_handler):
+        names = 'date', 'time', 'open', 'high', 'low', 'close', 'openInt', 'volume', 'comment'
+        formats = 'u2', 'u2', 'f4', 'f4', 'f4', 'f4', 'i4', 'i4', 'i4'
+        offsets = (0, 2) + tuple(range(4, 31, 4))
+
+        dt_types = np.dtype({'names': names, 'offsets': offsets, 'formats': formats}, align=True)
+        hq_min_df = pd.DataFrame(np.fromfile(file_handler, dt_types))
+
+        hq_min_df.index = hq_min_df.date.transform(self._int2date) + pd.to_timedelta(hq_min_df.time,
+                                                                                     unit='m')
+        hq_min_df.pop('date')
+        hq_min_df.pop('time')
+        return hq_min_df
 
     def tdx_future_min_hq(self, contractid, update=dt.datetime(1970, 1, 1)):
         """
@@ -118,16 +123,43 @@ class TdxFutureQuotes(Future):
         if not os.path.exists(hq_path):
             return None
 
-        names = 'date', 'time', 'open', 'high', 'low', 'close', 'openInt', 'volume', 'comment'
-        formats = 'u2', 'u2', 'f4', 'f4', 'f4', 'f4', 'i4', 'i4', 'i4'
-        offsets = (0, 2) + tuple(range(4, 31, 4))
+        f = open(hq_path, "rb")
 
-        dt_types = np.dtype({'names': names, 'offsets': offsets, 'formats': formats}, align=True)
-        hq_min_df = pd.DataFrame(np.fromfile(hq_path, dt_types))
-        hq_min_df.index = hq_min_df.date.transform(self._int2date) + pd.to_timedelta(hq_min_df.time, unit='m')
-        hq_min_df.pop('date')
-        hq_min_df.pop('time')
-        return hq_min_df
+        f.seek(0, 0)
+        begin = np.fromfile(f, dtype=np.int16, count=1)
+        begin = self._int2date(begin)
+
+        f.seek(-32, 2)
+        end = np.fromfile(f, dtype=np.int16, count=1)
+        end = self._int2date(end)
+
+        if update < begin:
+            f.seek(0, 0)
+            return self._tdx_future_min_hq(f)
+        elif update > end:
+            return None
+
+        k_num = 240
+        if self.period == '5min':
+            k_num = k_num / 5
+
+        delta = (end - update)
+        factor = delta.days * k_num
+
+        while update < end:
+            try:
+                f.seek(-32 * factor, 2)
+                end = np.fromfile(f, dtype=np.int16, count=1)
+                f.seek(-32 * factor, 2)  # 数据读取后移位，文件指针要回到原来位置
+                end = self._int2date(end)
+                factor = factor * 2
+            except OSError:
+                f.seek(0, 0)
+                log.warning('%s trade recoders are few and factor = %d is too big.', contractid, factor)
+                break
+
+        hq_min_df = self._tdx_future_min_hq(f)
+        return hq_min_df[hq_min_df.index > update]
 
     def to_mongodb(self):
         contract_df = self.variety()
@@ -168,9 +200,8 @@ class TdxFutureQuotes(Future):
             result = collection.insert_many(quote)
             log.debug('Insert %d quotes of variety %s' % (len(result.inserted_ids), contractid))
 
-    @staticmethod
-    def _to_hdf(contractid, future_hq_dir, tdx_future_hq_func):
-        file_string = os.path.join(future_hq_dir, contractid.lower() + '.h5')
+    def _to_hdf(self, contractid, future_hq_dir, tdx_future_hq_func):
+        file_string = os.path.join(future_hq_dir, contractid.lower() + '.' + self.period)
         try:
             last = pd.read_hdf(file_string, 'table', start=-1)
             update = list(last.index)[0]
@@ -182,7 +213,7 @@ class TdxFutureQuotes(Future):
         if isinstance(quote_df, pd.DataFrame) and not quote_df.empty:
             quote_df.to_hdf(file_string, 'table', format='table', append=True, complevel=5, complib='blosc')
 
-    def to_hdf(self, update):
+    def to_hdf(self, update=''):
         contract_df = self.variety()
 
         if not isinstance(contract_df, pd.DataFrame) or contract_df.empty:
@@ -222,6 +253,13 @@ class TdxFutureQuotes(Future):
         for contractid in contract_df['contractid']:
             self._to_hdf(contractid, future_hq_dir, tdx_future_hq_func)
 
+    @staticmethod
+    def _int2date(x):
+        year = int(x / 2048) + 2004
+        month = int(x % 2048 / 100)
+        day = x % 2048 % 100
+        return dt.datetime(year, month, day)
+
 
 if __name__ == '__main__':
     dce_tdx_hq = TdxFutureQuotes()
@@ -236,5 +274,8 @@ if __name__ == '__main__':
     # print(df.head())
     # print(df.tail())
 
+    # 存储dce day和1min数据
+    # dce_tdx_hq.to_hdf(update=dt.datetime.now())
+    dce_tdx_hq.set_period('1min')
     # dce_tdx_hq.to_hdf()
     dce_tdx_hq.to_hdf(update=dt.datetime.now())

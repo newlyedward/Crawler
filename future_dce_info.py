@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+"""
+get info from web
+"""
 import redis
 import requests
 import pandas as pd
@@ -137,4 +140,6 @@ if __name__ == '__main__':
         df = future_dce_info.contracts('i')
         print(df.head())
 
-    future_dce_info.save_contracts()
+    to_do = 0
+    if to_do:
+        future_dce_info.save_contracts()

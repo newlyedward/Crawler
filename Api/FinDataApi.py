@@ -1,9 +1,15 @@
-from flask import Flask, request, make_response, render_template, session, redirect, url_for, flash
+from flask import Flask, request, Response, jsonify, render_template, session, redirect, url_for, flash
 from flask_bootstrap import Bootstrap
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField
 from wtforms.validators import Required
 import pandas as pd
+import json
+
+from Quant.future import Future
+from utils import LogHandler
+
+log = LogHandler('FinDataApi')
 
 app = Flask(__name__, static_url_path='')
 Bootstrap(app)
@@ -35,7 +41,7 @@ Bootstrap(app)
 
 @app.route('/')
 def home():
-    return render_template('home.html', title_name='Welcome')
+    return render_template('home.html')
 
 
 @app.route('/service')
@@ -48,12 +54,35 @@ def about():
     return 'about'
 
 
+@app.route('/segment/', methods=['POST'])
+def data():
+    response = jsonify({'result': 'none'})
+    if request.method == 'POST' and request.form:
+        params = request.form.to_dict()
+        try:
+            if params['instrument'] == '期货':
+                future = Future()
+                if params['segment'] == '主力合约' or params['segment'] == '商品指数':
+                    response = Response(future.variety().to_json(orient='split', force_ascii=False),
+                                         mimetype='application/json')
+
+        except KeyError:
+            text = json.dumps(params, ensure_ascii=False)
+            log.info('/segment/params is error: %s', text)
+            response = jsonify({'result': 'KeyError'})
+
+    return response
+
+
 # @app.route('/data/', methods=['POST'])
 # def data():
 #     file_string = r'J:\h5\future\dlce\day\JL8.h5'
 #     df = pd.read_hdf(file_string, 'table')
 #     dfj = df.to_json(orient='split', date_format='epoch', date_unit='ms')
 #     return dfj
+
+def run():
+    app.run(debug=True)
 
 
 if __name__ == '__main__':
