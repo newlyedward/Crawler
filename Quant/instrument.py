@@ -28,5 +28,20 @@ class Instrument(object):
         self.period = period.lower()
         self.market = market.lower()
 
+    @staticmethod
+    def find(collection, filter_dict):
+        if filter_dict:
+            records = collection.find(filter_dict)
+        else:
+            records = collection.find()
+
+        df = pd.DataFrame(list(records))
+
+        if df.empty:
+            return None
+        else:
+            del df['_id']
+            return df
+
     def __del__(self):
         self.mongo.close()

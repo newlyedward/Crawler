@@ -1,18 +1,21 @@
 var chart = null;
 
-$(function () {
+$(function() {
+    var url = window.location.href;
     // set the allowed units for data grouping
-    var   groupingUnits = [[
-            'week',                         // unit name
-            [1]                             // allowed multiples
-        ], [
-            'month',
-            [1, 2, 3, 4, 6]
-        ]]
+    var groupingUnits = [
+        [
+            'week', // unit name
+            [1] // allowed multiples
+        ],
+        [
+            'month', [1, 2, 3, 4, 6]
+        ]
+    ]
 
-    chart = new Highcharts.Chart( {
-        chart :{
-            renderTo: 'container',
+    chart = new Highcharts.Chart({
+        chart: {
+            renderTo: 'candle',
             type: 'StockChart',
             events: {
                 load: requestData
@@ -67,8 +70,7 @@ $(function () {
             lineColor: 'green',
             upColor: 'red',
             upLineColor: 'red',
-            tooltip: {
-            },
+            tooltip: {},
             data: [],
             dataGrouping: {
                 units: groupingUnits
@@ -87,7 +89,7 @@ $(function () {
 })
 
 function requestData() {
-    $.post("/data/", { code : 'JL8', period: 'day'},
+    $.post("/data/", { code: 'JL8', period: 'day' },
         function(data) {
             //data is json that says string
             console.log("get k line!")
@@ -119,5 +121,5 @@ function requestData() {
                     data: volume
                 }]
             });
-    }, 'json');
+        }, 'json');
 }

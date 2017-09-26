@@ -5,7 +5,7 @@ get future info from file or database
 import os
 import pandas as pd
 
-from .instrument import Instrument
+from Quant.instrument import Instrument
 from utils import LogHandler
 
 log = LogHandler('future')
@@ -19,21 +19,6 @@ class Future(Instrument):
     def __init__(self, market='dce', period='day'):
         super(Future, self).__init__(market, period)
         self.db = self.mongo['futures']
-
-    @staticmethod
-    def find(collection, filter_dict):
-        if filter_dict:
-            records = collection.find(filter_dict)
-        else:
-            records = collection.find()
-
-        df = pd.DataFrame(list(records))
-
-        if df.empty:
-            return None
-        else:
-            del df['_id']
-            return df
 
     def variety(self, market='', varietyid=''):
         filter_dict = {}
@@ -56,26 +41,49 @@ class Future(Instrument):
             filter_dict['varietyid'] = varietyid.upper()
         if update:
             update = int(update.strftime('%Y%m%d'))
-            filter_dict = {'end': {'$gt': update}}
+            filter_dict['end'] = {'$gt': update}
 
         return self.find(self.db['contract'], filter_dict)
+
+    def option(self, market='', varietyid='', contractid='', update=''):
+        filter_dict = {}
+
+        if market:
+            filter_dict['market'] = market
+        if contractid:
+            filter_dict = {'contractid': contractid.lower()}
+        if varietyid:
+            filter_dict['varietyid'] = varietyid.upper()
+        if update:
+            update = int(update.strftime('%Y%m%d'))
+            filter_dict['end'] = {'$gt': update}
+
+        return self.find(self.db['option'], filter_dict)
 
 
 if __name__ == '__main__':
     future = Future()
-    # print(future.contract().tail())
-    # print(future.contract(contractid='i1801').tail())
-    # print(future.contract(varietyid='i').tail())
-    # print(future.contract(varietyid='ii'))
+    print(future.contract().tail())
+    print('====================================================')
+    print(future.contract(contractid='i1801').tail())
+    print('====================================================')
+    print(future.contract(varietyid='i').tail())
+    print('====================================================')
+    print(future.contract(varietyid='ii'))
+    print('====================================================')
     import datetime as dt
 
-    # print(future.contract(varietyid='i', update=dt.datetime.now()))
-    # print(future.contract(update=dt.datetime.now()))
+    print('====================================================')
+    print(future.contract(varietyid='i', update=dt.datetime.now()).tail())
+    print('====================================================')
+    print(future.contract(update=dt.datetime.now()).tail())
+    print(future.contract(market='DCE', update=dt.datetime.now()).tail())
+    print('====================================================')
     # print(future.variety())
-    print(future.variety(market='大连交易所'))
-    print('====================================================')
-    print(future.variety(market='大连商品交易所'))
-    print('====================================================')
-    print(future.variety(market='大连商品交易所', varietyid='i'))
+    # print(future.variety(market='大连交易所'))
+    # print('====================================================')
+    # print(future.variety(market='大连商品交易所'))
+    # print('====================================================')
+    # print(future.variety(market='大连商品交易所', varietyid='i'))
     # print(future.variety(varietyid='i'))
     # print(future.variety(varietyid='ii'))

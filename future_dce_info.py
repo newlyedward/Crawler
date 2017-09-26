@@ -100,6 +100,7 @@ class FutureDceInfo(FutureInfo):
             if update_df.empty:
                 continue
 
+            update_df.loc[:, 'market'] = 'DCE'
             contracts = update_df[update_df['contractid'].str.match('\w{1,2}\d{4}$')].to_dict('records')
             if not contracts:
                 log.info('Don not get new records of variety %s' % varietyid)
@@ -109,12 +110,13 @@ class FutureDceInfo(FutureInfo):
             log.info('Insert %d records of variety %s' % (len(result.inserted_ids), varietyid))
 
             # 期权暂时不处理
-            # options = update_df[update_df['contractid'].str.match('\w{1,2}\d{4}-\w-\d+')].to_dict('records')
-            # if not options:
-            #     continue
-            #
-            # result = db['option'].insert_many(options)
-            # log.info('Insert %d records of variety %s' % (len(result.inserted_ids), varietyid))
+            del update_df['delivery']
+            options = update_df[update_df['contractid'].str.match('\w{1,2}\d{4}-\w-\d+')].to_dict('records')
+            if not options:
+                continue
+
+            result = db['option'].insert_many(options)
+            log.info('Insert %d records of variety %s' % (len(result.inserted_ids), varietyid))
 
     def contracts(self, varietyid):
         # 提取数据
@@ -140,6 +142,6 @@ if __name__ == '__main__':
         df = future_dce_info.contracts('i')
         print(df.head())
 
-    to_do = 0
+    to_do = 1
     if to_do:
         future_dce_info.save_contracts()

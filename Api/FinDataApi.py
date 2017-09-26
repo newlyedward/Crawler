@@ -5,6 +5,7 @@ from wtforms import StringField, SubmitField
 from wtforms.validators import Required
 import pandas as pd
 import json
+import datetime as dt
 
 from Quant.future import Future
 from utils import LogHandler
@@ -44,18 +45,18 @@ def home():
     return render_template('home.html')
 
 
-@app.route('/service')
-def service():
-    return 'service'
-
-
-@app.route('/about')
-def about():
-    return 'about'
+# @app.route('/service')
+# def service():
+#     return 'service'
+#
+#
+# @app.route('/about')
+# def about():
+#     return 'about'
 
 
 @app.route('/segment/', methods=['POST'])
-def data():
+def segment():
     response = jsonify({'result': 'none'})
     if request.method == 'POST' and request.form:
         params = request.form.to_dict()
@@ -64,8 +65,13 @@ def data():
                 future = Future()
                 if params['segment'] == '主力合约' or params['segment'] == '商品指数':
                     response = Response(future.variety().to_json(orient='split', force_ascii=False),
-                                         mimetype='application/json')
-
+                                        mimetype='application/json')
+                elif params['segment'] == '大商所':
+                    response = Response(future.contract('DCE', update=dt.datetime.now())
+                                        .to_json(orient='split', force_ascii=False), mimetype='application/json')
+                elif params['segment'] == '期权':
+                    response = Response(future.option(update=dt.datetime.now())
+                                        .to_json(orient='split', force_ascii=False), mimetype='application/json')
         except KeyError:
             text = json.dumps(params, ensure_ascii=False)
             log.info('/segment/params is error: %s', text)
@@ -74,12 +80,19 @@ def data():
     return response
 
 
-# @app.route('/data/', methods=['POST'])
-# def data():
-#     file_string = r'J:\h5\future\dlce\day\JL8.h5'
-#     df = pd.read_hdf(file_string, 'table')
-#     dfj = df.to_json(orient='split', date_format='epoch', date_unit='ms')
-#     return dfj
+@app.route('/hq/<instrument>/<segment>/<id>')
+def hq(instrument, segment, id):
+    return render_template("hq.html")
+
+
+@app.route('/data/', methods=['POST'])
+def data():
+    file_string = r'J:\h5\future\dce\day\jl8.day'
+    df = pd.read_hdf(file_string, 'table')
+    dfj = df.to_json(orient='split', date_format='epoch', date_unit='ms')
+    response = Response(dfj, mimetype='application/json')
+    return dfj
+
 
 def run():
     app.run(debug=True)
