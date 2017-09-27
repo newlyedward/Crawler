@@ -7,7 +7,7 @@ from pymongo import MongoClient
 
 from utils import get_congfig_handle, LogHandler
 from settings import *
-from future import Future
+from Quant.future import Future
 
 log = LogHandler('tdx_hq')
 
@@ -220,7 +220,7 @@ class TdxFutureQuotes(Future):
             log.info('Data variety is empty')
             return
 
-        future_hq_dir = os.path.join(self.future_dir, self.market, self.period)
+        future_hq_dir = os.path.join(self.future_dir, 'hq', self.period)
         if not os.path.exists(future_hq_dir):
             os.makedirs(future_hq_dir)
 
@@ -275,7 +275,7 @@ if __name__ == '__main__':
     # print(df.tail())
 
     # 存储dce day和1min数据
-    # dce_tdx_hq.to_hdf(update=dt.datetime.now())
+    dce_tdx_hq.to_hdf(update=dt.datetime.now())
     dce_tdx_hq.set_period('1min')
     # dce_tdx_hq.to_hdf()
     dce_tdx_hq.to_hdf(update=dt.datetime.now())

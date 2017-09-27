@@ -6,6 +6,7 @@ MARKET_LIST = ('cffex',  # 中金所
                'shse',  # 上海证券交易所
                'szse',  # 深圳证券交易所
                )
+
 # --------------------- TDX ------------------------------------------
 
 EXCHANGE2TDX_CODE = {MARKET_LIST[0]: '47',  # 47：中金所
@@ -35,4 +36,3 @@ PERIOD_EXT = {'day': '.day',  # 日线
 # --------------------- dce ------------------------------------------
 CONTRACTS_DCE_URL = 'http://www.dce.com.cn/publicweb/businessguidelines/queryContractInfoVariety.html?variety='
 MEMBER_POS_BATCH_DCE_URL = 'http://www.dce.com.cn/publicweb/quotesdata/exportMemberDealPosiQuotesBatchData.html'
-

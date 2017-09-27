@@ -1,4 +1,4 @@
-var INSTRUMENTS = {
+var ASSETS = {
     "期货": ["主力合约", "商品指数", "大商所", "上期所", "郑商所", "中金所", "期权"],
     "股票": ["沪深A股", "中小板", "创业板", "港股"],
     "债券": ["国债", "金融债", "城投债", "企业债", "可转债", "可交换债"],
@@ -6,7 +6,7 @@ var INSTRUMENTS = {
 }
 
 $(function() {
-    var navbar_txt = INSTRUMENTS['期货'];
+    var navbar_txt = ASSETS['期货'];
     change_navbar('期货', navbar_txt);
 
     //根据品种选择改变菜单条和显示列表信息
@@ -39,18 +39,31 @@ $(function() {
 
         $("ul.nav>li.active").removeClass('active');
         $(this).parent().addClass('active');
-        $.post("/segment/", { instrument: brand_txt, segment: navbar_txt }, build_table);
+        $.post("/segment/", { asset: brand_txt, segment: navbar_txt }, build_table);
 
         console.log(brand_txt + ' : ' + navbar_txt + ',' + active_txt);
     });
 
     //双击行在打开新的页面
     $("tbody").on("click", "tr", function() {
-        var contractid = $(this).children("td").eq(2).text(),
-            instrument = $.trim($("a.navbar-brand").text()),
+        var code = $(this).children("td").eq(2).text(),
+            asset = $.trim($("a.navbar-brand").text()),
             segment = $("li.active").text();
 
-        window.open("/hq/" + instrument + "/" + segment + "/" + contractid);
+        segment = $("li.active").text();
+
+        if (asset = "期货") {
+            url = "/hq/future/"
+            if (segment == "主力合约") {
+                url += "maincontract/" + code;
+            } else if (segment == "商品指数") {
+                url += "cindex/" + code;
+            } else {
+                url += segment + '/' + code;
+            }
+        }
+
+        window.open(url);
     });
 });
 
@@ -62,7 +75,7 @@ function change_navbar(brand_txt, navbar_txt) {
         if (x == 0) {
             navbar.append('<li class="active"><a href="#">' + navbar_txt[x] + '</a></li>');
             // 取对应的列表，需要发post信息
-            $.post("/segment/", { instrument: brand_txt, segment: navbar_txt[x] }, build_table);
+            $.post("/segment/", { asset: brand_txt, segment: navbar_txt[x] }, build_table);
             continue;
         }
         navbar.append('<li><a href="#">' + navbar_txt[x] + '</a></li>');

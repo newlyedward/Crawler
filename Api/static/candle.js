@@ -1,7 +1,23 @@
-var chart = null;
-
 $(function() {
-    var url = window.location.href;
+    var pathname = location.pathname.split('/');
+
+    params = { asset: pathname[2], segment: pathname[3], code: pathname[4], period: 'day' }
+
+    $.post('/hq/data/', params, createchart)
+        // set the allowed units for data grouping
+    console.log(pathname)
+})
+
+function createchart(data, status) {
+    var ohlc = [],
+        volume = [],
+        openInt = [],
+        index = data.index,
+        values = data.data,
+        dataLength = 0,
+        i = 0;
+
+    dataLength = index.length;
     // set the allowed units for data grouping
     var groupingUnits = [
         [
@@ -11,22 +27,33 @@ $(function() {
         [
             'month', [1, 2, 3, 4, 6]
         ]
-    ]
+    ];
 
-    chart = new Highcharts.Chart({
-        chart: {
-            renderTo: 'candle',
-            type: 'StockChart',
-            events: {
-                load: requestData
-            }
-        },
+    for (i; i < dataLength; i += 1) {
+        ohlc.push([
+            index[i], // the date
+            values[i][0], // open
+            values[i][1], // high
+            values[i][2], // low
+            values[i][3] // close
+        ]);
+        volume.push([
+            index[i], // the date
+            values[i][5] // the volume
+        ]);
+        openInt.push([
+            index[i], // the date
+            values[i][4] // the openInt
+        ]);
+    }
+    // create the chart
+    $('#candle').highcharts('StockChart', {
         rangeSelector: {
-            selected: 2,
+            selected: 1,
             inputDateFormat: '%Y-%m-%d'
         },
         title: {
-            text: '焦炭主力'
+            text: $("title").text()
         },
         xAxis: {
             dateTimeLabelFormats: {
@@ -65,61 +92,31 @@ $(function() {
         }],
         series: [{
             type: 'candlestick',
-            name: '焦炭主力',
+            name: $("title").text(),
             color: 'green',
             lineColor: 'green',
             upColor: 'red',
             upLineColor: 'red',
             tooltip: {},
-            data: [],
+            data: ohlc,
             dataGrouping: {
                 units: groupingUnits
             }
         }, {
             type: 'column',
             name: 'Volume',
-            data: [],
+            data: volume,
+            yAxis: 1,
+            dataGrouping: {
+                units: groupingUnits
+            }
+        }, {
+            name: 'OpenInt',
+            data: openInt,
             yAxis: 1,
             dataGrouping: {
                 units: groupingUnits
             }
         }]
     });
-    console.log('main function finished')
-})
-
-function requestData() {
-    $.post("/data/", { code: 'JL8', period: 'day' },
-        function(data) {
-            //data is json that says string
-            console.log("get k line!")
-            var ohlc = [],
-                volume = [],
-                index = data.index,
-                values = data.data,
-                dataLength = 0,
-                i = 0;
-            dataLength = index.length;
-            for (i; i < dataLength; i += 1) {
-                ohlc.push([
-                    index[i], // the date
-                    values[i][0], // open
-                    values[i][1], // high
-                    values[i][2], // low
-                    values[i][3] // close
-                ]);
-                volume.push([
-                    index[i], // the date
-                    values[i][5] // the volume
-                ]);
-            }
-
-            chart.update({
-                series: [{
-                    data: ohlc
-                }, {
-                    data: volume
-                }]
-            });
-        }, 'json');
 }

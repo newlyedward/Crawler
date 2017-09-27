@@ -8,6 +8,7 @@ import json
 import datetime as dt
 
 from Quant.future import Future
+from Quant.instrument import Instrument
 from utils import LogHandler
 
 log = LogHandler('FinDataApi')
@@ -61,7 +62,7 @@ def segment():
     if request.method == 'POST' and request.form:
         params = request.form.to_dict()
         try:
-            if params['instrument'] == '期货':
+            if params['asset'] == '期货':
                 future = Future()
                 if params['segment'] == '主力合约' or params['segment'] == '商品指数':
                     response = Response(future.variety().to_json(orient='split', force_ascii=False),
@@ -80,18 +81,38 @@ def segment():
     return response
 
 
-@app.route('/hq/<instrument>/<segment>/<id>')
-def hq(instrument, segment, id):
-    return render_template("hq.html")
+@app.route('/hq/<asset>/<segment>/<code>')
+def hq(asset, segment, code):
+    return render_template("hq.html", asset=asset, segment=segment, title=code)
 
 
-@app.route('/data/', methods=['POST'])
+@app.route('/hq/data/', methods=['POST'])
 def data():
-    file_string = r'J:\h5\future\dce\day\jl8.day'
-    df = pd.read_hdf(file_string, 'table')
+    response = jsonify({'result': 'none'})
+
+    if request.method != 'POST' or not request.form:
+        return response
+
+    params = request.form.to_dict()
+
+    try:
+        asset = params['asset']
+        segment = params['segment']
+        code = params['code']
+        period = params['period']
+    except KeyError:
+        response = jsonify({'result': 'KeyError'})
+
+    instrument = Instrument(market=segment, period=period)
+    if segment == 'maincontract':
+        code = code + 'l8'
+    elif segment == 'cindex':
+        code = code + 'l9'
+
+    df = instrument.bar(code, asset, ktype=period)
     dfj = df.to_json(orient='split', date_format='epoch', date_unit='ms')
     response = Response(dfj, mimetype='application/json')
-    return dfj
+    return response
 
 
 def run():
