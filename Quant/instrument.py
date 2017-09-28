@@ -25,7 +25,7 @@ class Instrument(object):
     if not os.path.exists(base_dir):
         os.mkdir(base_dir)
 
-    def __init__(self, market, period='day'):
+    def __init__(self, market='', period='day'):
         self.period = period.lower()
         self.market = market.lower()
 

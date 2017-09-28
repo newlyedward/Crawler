@@ -1,48 +1,45 @@
-$(function () {
+$(function() {
     Highcharts.setOptions({
         lang: {
             rangeSelectorZoom: ''
         }
     });
-
-    //var data={{data}};
-
-    $.getJSON('/data/', function (data) {
+    $.getJSON('https://data.jianshukeji.com/jsonp?filename=json/aapl-ohlcv.json&callback=?', function(data) {
         var ohlc = [],
             volume = [],
-            index = data.index
-            values = data.data
-            dataLength = index.length,
+            dataLength = data.length,
             // set the allowed units for data grouping
-            groupingUnits = [[
-                'week',                         // unit name
-                [1]                             // allowed multiples
-            ], [
-                'month',
-                [1, 2, 3, 4, 6]
-            ]],
+            groupingUnits = [
+                [
+                    'week', // unit name
+                    [1] // allowed multiples
+                ],
+                [
+                    'month', [1, 2, 3, 4, 6]
+                ]
+            ],
             i = 0;
         for (i; i < dataLength; i += 1) {
             ohlc.push([
-                index[i], // the date
-                values[i][0], // open
-                values[i][1], // high
-                values[i][2], // low
-                values[i][3] // close
+                data[i][0], // the date
+                data[i][1], // open
+                data[i][2], // high
+                data[i][3], // low
+                data[i][4] // close
             ]);
             volume.push([
-                index[i], // the date
-                values[i][5] // the volume
+                data[i][0], // the date
+                data[i][5] // the volume
             ]);
         }
         // create the chart
-        $('#container').highcharts('StockChart', {
+        $('#ohlc').highcharts('StockChart', {
             rangeSelector: {
                 selected: 1,
                 inputDateFormat: '%Y-%m-%d'
             },
             title: {
-                text: '焦炭主力'
+                text: '苹果历史股价'
             },
             xAxis: {
                 dateTimeLabelFormats: {
@@ -81,13 +78,12 @@ $(function () {
             }],
             series: [{
                 type: 'candlestick',
-                name: '焦炭主力',
+                name: 'AAPL',
                 color: 'green',
                 lineColor: 'green',
                 upColor: 'red',
                 upLineColor: 'red',
-                tooltip: {
-                },
+                tooltip: {},
                 data: ohlc,
                 dataGrouping: {
                     units: groupingUnits

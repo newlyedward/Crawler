@@ -1,12 +1,14 @@
 # Created by .ignore support plugin (hsz.mobi)
 .idea/
-prepare_request/Spiders/__pycache__/
-prepare_request/__pycache__/
 
 /tests/test.py
 /tests/.cache/
 /learn/
-*.h5
 
 /log/
-/html/
+/.ipynb_checkpoints/
+/.scrapy/
+/Api/.vscode/
+/Api/log/
+/Api/learnhtml/
+/Api/templates/bootstrap/
