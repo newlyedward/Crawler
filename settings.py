@@ -36,3 +36,6 @@ PERIOD_EXT = {'day': '.day',  # 日线
 # --------------------- dce ------------------------------------------
 CONTRACTS_DCE_URL = 'http://www.dce.com.cn/publicweb/businessguidelines/queryContractInfoVariety.html?variety='
 MEMBER_POS_BATCH_DCE_URL = 'http://www.dce.com.cn/publicweb/quotesdata/exportMemberDealPosiQuotesBatchData.html'
+
+# --------------------- sina ------------------------------------------
+FST_SINA_URL_FORMAT = 'http://money.finance.sina.com.cn/corp/go.php/vDOWN_{}/displaytype/4/stockid/{}/ctrl/all.phtml'

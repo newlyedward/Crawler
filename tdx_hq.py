@@ -5,7 +5,7 @@ import pandas as pd
 import datetime as dt
 from pymongo import MongoClient
 
-from utils import get_congfig_handle, LogHandler
+from utils import LogHandler
 from settings import *
 from Quant.future import Future
 
