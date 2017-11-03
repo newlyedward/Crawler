@@ -157,6 +157,9 @@ class TdxFutureQuotes(Future):
                 f.seek(0, 0)
                 log.warning('%s trade recoders are few and factor = %d is too big.', contractid, factor)
                 break
+            except TypeError:
+                log.error('{} end date is null!'.format(contractid))
+                return None
 
         hq_min_df = self._tdx_future_min_hq(f)
         return hq_min_df[hq_min_df.index > update]
@@ -275,7 +278,7 @@ if __name__ == '__main__':
     # print(df.tail())
 
     # 存储dce day和1min数据
-    dce_tdx_hq.to_hdf(update=dt.datetime.now())
+    # dce_tdx_hq.to_hdf(update=dt.datetime.now())
     dce_tdx_hq.set_period('1min')
     # dce_tdx_hq.to_hdf()
     dce_tdx_hq.to_hdf(update=dt.datetime.now())

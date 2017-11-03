@@ -6,7 +6,6 @@ from logging.handlers import TimedRotatingFileHandler
 from lxml import etree
 from configparser import ConfigParser
 
-
 # ------------------------ logging ----------------------------------
 class LogHandler(logging.Logger):
     """
@@ -53,6 +52,9 @@ class LogHandler(logging.Logger):
         else:
             stream_handler.setLevel(level)
         self.addHandler(stream_handler)
+
+
+log = LogHandler('utils')
 
 
 # ---------------------- config ------------------------------------------
@@ -208,6 +210,7 @@ def chinese2digits(chinese):
     result = result + hnd_mln
     return result
 
+
 if __name__ == '__main__':
     # test for get_post_text
     # url = "http://www.dce.com.cn/dalianshangpin/sspz/487477/487481/1500303/index.html"
@@ -230,6 +233,7 @@ if __name__ == '__main__':
     todo = 0
     if todo:
         import redis
+
         conn = redis.Redis('192.168.2.130', 6379, decode_responses=True)
 
         ua_list = get_ua_list()

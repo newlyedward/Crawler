@@ -10,5 +10,5 @@ from jupyter_lib.lib_loader import *
 
 # Custom Import
 from Quant.instrument import Instrument
-from ts_zcsz import KsCzsz
+from ts_zcsz import *
 from utils import *
