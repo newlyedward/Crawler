@@ -159,6 +159,7 @@ class TdxFutureQuotes(Future):
                 break
             except TypeError:
                 log.error('{} end date is null!'.format(contractid))
+                # TODO 删除数据文件，文件指向开始
                 return None
 
         hq_min_df = self._tdx_future_min_hq(f)
@@ -278,7 +279,7 @@ if __name__ == '__main__':
     # print(df.tail())
 
     # 存储dce day和1min数据
-    # dce_tdx_hq.to_hdf(update=dt.datetime.now())
-    dce_tdx_hq.set_period('1min')
-    # dce_tdx_hq.to_hdf()
     dce_tdx_hq.to_hdf(update=dt.datetime.now())
+    # dce_tdx_hq.set_period('1min')
+    # dce_tdx_hq.to_hdf()
+    # dce_tdx_hq.to_hdf(update=dt.datetime.now())

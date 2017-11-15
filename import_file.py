@@ -2,6 +2,7 @@
 from IPython.display import display, HTML, Javascript, set_matplotlib_formats
 import numpy as np
 import pandas as pd
+import tushare as ts
 import matplotlib.pyplot as plt
 from highcharts import Highchart, Highstock
 
