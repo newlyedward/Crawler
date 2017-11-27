@@ -234,7 +234,7 @@ if __name__ == '__main__':
     if todo:
         import redis
 
-        conn = redis.Redis('192.168.2.130', 6379, decode_responses=True)
+        conn = redis.Redis('192.168.2.88', 6379, decode_responses=True)
 
         ua_list = get_ua_list()
         conn.sadd('user_agent', *ua_list)

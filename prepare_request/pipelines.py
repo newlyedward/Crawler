@@ -5,7 +5,7 @@
 # Don't forget to add your pipeline to the ITEM_PIPELINES setting
 # See: http://doc.scrapy.org/en/latest/topics/item-pipeline.html
 from pymongo import MongoClient
-from .items import DceVarietyItem
+from .items import VarietyItem
 # import sys
 # sys.path.append('G:/Code/Crawler')
 from utils import LogHandler
@@ -44,7 +44,7 @@ class MongoDceVarietyPipeline(object):
         self.client.close()
 
     def process_item(self, item, spider):
-        if isinstance(item, DceVarietyItem):
+        if isinstance(item, VarietyItem):
             self.db[self.collection].update({'varietyid': item['varietyid']},
                                             {'$set': dict(item)}, upsert=True)
             log.info('Update variety %s' % item['varietyid'])

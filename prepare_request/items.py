@@ -28,7 +28,7 @@ import scrapy
 #            }
 
 
-class DceVarietyItem(scrapy.Item):
+class VarietyItem(scrapy.Item):
     variety = scrapy.Field()
     varietyid = scrapy.Field()
     market = scrapy.Field()

@@ -5,7 +5,7 @@ from scrapy_redis.spiders import RedisSpider
 from scrapy.spiders import CrawlSpider, Rule
 from scrapy.linkextractors import LinkExtractor
 import re
-from ..items import DceVarietyItem
+from ..items import VarietyItem
 from utils import LogHandler
 
 log = LogHandler('DceContractSpider')
@@ -56,7 +56,7 @@ class DceContractSpider(RedisSpider, CrawlSpider):
 
         variety_dict = dict(zip(keys, values))
 
-        dce_variety_item = DceVarietyItem()
+        dce_variety_item = VarietyItem()
 
         try:
             dce_variety_item['variety'] = variety_dict['交易品种']

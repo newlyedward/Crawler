@@ -13,3 +13,4 @@ from jupyter_lib.lib_loader import *
 from Quant.instrument import Instrument
 from ts_zcsz import *
 from utils import *
+from future_basic_info import FutureShfeInfo

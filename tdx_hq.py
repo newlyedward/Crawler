@@ -280,6 +280,6 @@ if __name__ == '__main__':
 
     # 存储dce day和1min数据
     dce_tdx_hq.to_hdf(update=dt.datetime.now())
-    # dce_tdx_hq.set_period('1min')
+    dce_tdx_hq.set_period('1min')
     # dce_tdx_hq.to_hdf()
-    # dce_tdx_hq.to_hdf(update=dt.datetime.now())
+    dce_tdx_hq.to_hdf(update=dt.datetime.now())

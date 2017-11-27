@@ -4,13 +4,14 @@ get info from web
 """
 import redis
 import requests
+import json
 import pandas as pd
 import datetime as dt
 from pymongo import MongoClient
-from utils import get_congfig_handle, LogHandler
+from utils import get_congfig_handle, LogHandler, get_html_text
 from settings import *
 
-log = LogHandler('future_dce_info')
+log = LogHandler('future_basic_info')
 
 
 class FutureInfo(object):
@@ -131,6 +132,40 @@ class FutureDceInfo(FutureInfo):
         dfs[0].columns = ['varietyid', 'contractid', 'unit', 'change', 'begin', 'end', 'delivery']
         dfs[0].varietyid = varietyid.upper()
         return dfs[0]
+
+
+class FutureShfeInfo(FutureInfo):
+    def __init__(self):
+        super(FutureShfeInfo, self).__init__('shfe')
+
+    def contracts(self, update=dt.datetime.now()):
+        # 提取数据
+        dfs = pd.DataFrame()
+
+        url = CONTRACTS_SHFE_URL.format(update.strftime('%Y%m%d'))
+        text = get_html_text(url, ua=self.conn.srandmember(self.ua_key))
+
+        if text.isdigit():
+            log.warning('Http error {}, url is  {}'.format(text, url))
+            return dfs
+
+        json_data = json.loads(text)
+
+        if len(json_data['ContractBaseInfo']) == 0:
+            return dfs
+
+        dfs = pd.DataFrame(json_data['ContractBaseInfo'])
+        # dfs.columns = ['varietyid', 'contractid', 'unit', 'change', 'begin', 'end', 'delivery']
+
+        # {'交易单位': 10,                    # int
+        #  '合约代码': 'a0311',
+        #  '品种': '豆一',
+        #  '开始交易日': 20020522,             # int
+        #  '最后交割日': '20031121',           # str 期权没有交割日
+        #  '最后交易日': 20031114,             # int
+        #  '最小变动价位': 1.0}                # int
+
+        return dfs
 
 
 if __name__ == '__main__':

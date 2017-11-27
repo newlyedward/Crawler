@@ -37,5 +37,12 @@ PERIOD_EXT = {'day': '.day',  # 日线
 CONTRACTS_DCE_URL = 'http://www.dce.com.cn/publicweb/businessguidelines/queryContractInfoVariety.html?variety='
 MEMBER_POS_BATCH_DCE_URL = 'http://www.dce.com.cn/publicweb/quotesdata/exportMemberDealPosiQuotesBatchData.html'
 
+# --------------------- shfe ------------------------------------------
+CONTRACTS_SHFE_URL = 'http://www.shfe.com.cn/data/instrument/ContractBaseInfo{}.dat'     # 合约参数一览
+# "/data/instrument/ContractDailyTradeArgument"+ dates + ".dat" //日合约交易参数
+# "/data/instrument/Settlement" + dates+ ".dat" //结算参数
+# "/data/instrument/Delivery" + dates+ ".dat"  //交割参数
+# "/data/instrument/SettlementAdjust"+ dates.substr(0, 6) + ".dat"; //结算参数调整表
+
 # --------------------- sina ------------------------------------------
 FST_SINA_URL_FORMAT = 'http://money.finance.sina.com.cn/corp/go.php/vDOWN_{}/displaytype/4/stockid/{}/ctrl/all.phtml'
